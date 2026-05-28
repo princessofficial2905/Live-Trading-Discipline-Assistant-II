@@ -746,6 +746,7 @@ function App() {
 
         {mainSection === SECTIONS.AFTER_SESSION && (
           <LinearFlow
+            label="AFTER-SESSION"
             steps={afterSessionSteps}
             index={afterSessionIndex}
             setIndex={setAfterSessionIndex}
@@ -756,6 +757,7 @@ function App() {
 
         {mainSection === SECTIONS.ALERTS && (
           <LinearFlow
+            label="ALERT SETUP"
             steps={alertsSteps}
             index={alertsIndex}
             setIndex={setAlertsIndex}
@@ -777,41 +779,69 @@ function HomePage({
 }) {
   return (
     <section className="home-screen" aria-label="Home">
-      <div className="home-copy">
+      <div className="home-hero">
         <p className="app-kicker">Live Trading Discipline Assistant II</p>
         <h1>Reminder: Fuck The Idea of Brokerage Donation.</h1>
+        <p>Calm sequence. Clean decisions. No impulse entries.</p>
       </div>
 
       <div className="home-actions" aria-label="Main sections">
-        <button
-          className={`section-card trading-card ${
+        <HomeSectionButton
+          className={`trading-card ${
             isCommittedActive ? "section-card-locked" : ""
           }`}
-          type="button"
+          title="Live Trading Session Steps"
+          description={
+            isCommittedActive
+              ? `Available again in: ${countdown}`
+              : "Follow the live-session sequence."
+          }
+          marker="Live"
           onClick={onLive}
           disabled={isCommittedActive}
-        >
-          <span>Live Trading Session Steps</span>
-          {isCommittedActive && (
-            <small>Available again in: {countdown}</small>
-          )}
-        </button>
+        />
 
-        <button
-          className="section-card after-card"
-          type="button"
+        <HomeSectionButton
+          className="after-card"
+          title="After-Session"
+          description="Prepare the next session cleanly."
+          marker="Review"
           onClick={onAfterSession}
-        >
-          <span>After-Session</span>
-        </button>
+        />
 
-        <button className="section-card alerts-card" type="button" onClick={onAlerts}>
-          <span>TradingView Alerts Steps</span>
-        </button>
+        <HomeSectionButton
+          className="alerts-card"
+          title="TradingView Alerts Steps"
+          description="Set alerts without missing anything."
+          marker="Alerts"
+          onClick={onAlerts}
+        />
       </div>
 
       {isCommittedActive && <LockedCommittedScreen countdown={countdown} />}
     </section>
+  );
+}
+
+function HomeSectionButton({
+  className = "",
+  title,
+  description,
+  marker,
+  onClick,
+  disabled = false,
+}) {
+  return (
+    <button
+      className={`section-card ${className}`}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <span className="section-marker">{marker}</span>
+      <span className="section-title">{title}</span>
+      <small>{description}</small>
+    </button>
   );
 }
 
@@ -861,13 +891,16 @@ function StepScreen({
   support = "",
   actionLabel = "Next",
   tone = "default",
+  label = "LIVE SESSION",
+  progress = "",
   onNext,
 }) {
   return (
     <article className={`step-screen tone-${tone}`}>
-      <div className="step-copy">
+      <div className="step-card-content">
+        <ScreenHeader label={label} progress={progress} />
         <h1 data-testid="screen-title">{title}</h1>
-        {support && <p data-testid="screen-support">{support}</p>}
+        <SupportBlock support={support} />
       </div>
       <button className="primary-action" type="button" onClick={onNext}>
         {actionLabel}
@@ -876,12 +909,20 @@ function StepScreen({
   );
 }
 
-function DecisionScreen({ title, support = "", options, tone = "default" }) {
+function DecisionScreen({
+  title,
+  support = "",
+  options,
+  tone = "default",
+  label = "LIVE SESSION",
+  progress = "",
+}) {
   return (
     <article className={`step-screen decision-screen tone-${tone}`}>
-      <div className="step-copy">
+      <div className="step-card-content">
+        <ScreenHeader label={label} progress={progress} />
         <h1 data-testid="screen-title">{title}</h1>
-        {support && <p data-testid="screen-support">{support}</p>}
+        <SupportBlock support={support} />
       </div>
       <div className="decision-actions">
         {options.map((option) => (
@@ -902,6 +943,38 @@ function DecisionScreen({ title, support = "", options, tone = "default" }) {
   );
 }
 
+function ScreenHeader({ label, progress = "" }) {
+  return (
+    <div className="screen-header">
+      <span className="screen-label">{label}</span>
+      {progress && <span className="progress-pill">{progress}</span>}
+    </div>
+  );
+}
+
+function SupportBlock({ support }) {
+  if (!support) {
+    return null;
+  }
+
+  const lines = support
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length > 1) {
+    return (
+      <div className="support-list" data-testid="screen-support">
+        {lines.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
+    );
+  }
+
+  return <p data-testid="screen-support">{support}</p>;
+}
+
 function CalculatorScreen({ direction, inputs, outputs, onChange, onNext }) {
   const isShort = direction === TRADE_DIRECTIONS.SHORT;
   const pnlIsValid = Number.isFinite(outputs.checkPnl);
@@ -913,6 +986,7 @@ function CalculatorScreen({ direction, inputs, outputs, onChange, onNext }) {
   return (
     <article className={`calculator-screen tone-${direction}`}>
       <div className="calculator-copy">
+        <ScreenHeader label="CALCULATOR" />
         <p className="calculator-mode">
           Calculator Mode: {isShort ? "SELL / SHORT" : "BUY / LONG"}
         </p>
@@ -1010,7 +1084,8 @@ function OutputCard({ label, value, danger = false, success = false }) {
 function ResultScreen({ message, onHome }) {
   return (
     <article className="step-screen result-screen">
-      <div className="step-copy">
+      <div className="step-card-content">
+        <ScreenHeader label="SESSION RESULT" />
         <h1 data-testid="screen-title">{message}</h1>
       </div>
       <button className="primary-action" type="button" onClick={onHome}>
@@ -1020,9 +1095,17 @@ function ResultScreen({ message, onHome }) {
   );
 }
 
-function LinearFlow({ steps, index, setIndex, onHome, finalButtonLabel }) {
+function LinearFlow({
+  label,
+  steps,
+  index,
+  setIndex,
+  onHome,
+  finalButtonLabel,
+}) {
   const step = steps[index];
   const isFinal = Boolean(step.final);
+  const progress = `Step ${index + 1} of ${steps.length}`;
 
   function goBack() {
     if (index === 0) {
@@ -1047,6 +1130,8 @@ function LinearFlow({ steps, index, setIndex, onHome, finalButtonLabel }) {
       <StepScreen
         title={step.title}
         support={step.support}
+        label={label}
+        progress={progress}
         actionLabel={isFinal ? finalButtonLabel : "Next"}
         onNext={isFinal ? onHome : () => setIndex(index + 1)}
       />
@@ -1066,6 +1151,9 @@ function FilterGuideFlow({
   const isFinal = Boolean(step.final);
   const screenerLabel =
     type === "bullish" ? "Back to Bullish Screener" : "Back to Bearish Screener";
+  const label =
+    type === "bullish" ? "BULLISH FILTER GUIDE" : "BEARISH FILTER GUIDE";
+  const progress = `Step ${index + 1} of ${steps.length}`;
 
   function goBack() {
     if (index === 0) {
@@ -1090,6 +1178,8 @@ function FilterGuideFlow({
       <StepScreen
         title={step.title}
         support={step.support}
+        label={label}
+        progress={progress}
         tone={type === "bearish" ? "short" : "long"}
         actionLabel={isFinal ? screenerLabel : "Next"}
         onNext={isFinal ? onBackToScreener : () => setIndex(index + 1)}
