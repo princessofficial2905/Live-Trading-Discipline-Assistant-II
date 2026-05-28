@@ -18,17 +18,12 @@ const TRADE_DIRECTIONS = {
 const LIVE_STEPS = {
   TRADING_VIEW: "tradingView",
   TIMEFRAME: "timeframe",
-  INDICATORS: "indicators",
-  SMART_MONEY: "smartMoney",
-  CHANDELIER: "chandelier",
-  TRAILING_STOP: "trailingStop",
+  LIVE_INDICATORS: "liveIndicators",
   STOCK_SCREENER: "stockScreener",
   BULLISH_SCREENER: "bullishScreener",
   BULLISH_SELECT_SYMBOL: "bullishSelectSymbol",
   BULLISH_SYMBOL_VISIBLE: "bullishSymbolVisible",
-  LONG_RELATIVE_VOLUME: "longRelativeVolume",
-  LONG_IN_TRADINGVIEW: "longInTradingView",
-  LONG_BUY_VISIBLE: "longBuyVisible",
+  LONG_TRADINGVIEW_CHANDELIER_BUY: "longTradingViewChandelierBuy",
   LONG_ZERODHA_ENTER: "longZerodhaEnter",
   LONG_ENTERING: "longEntering",
   LONG_SL: "longSl",
@@ -399,34 +394,16 @@ function App() {
         return (
           <StepScreen
             title="Timeframe = 2 minutes"
-            onNext={() => navigateLive(LIVE_STEPS.INDICATORS)}
+            onNext={() => navigateLive(LIVE_STEPS.LIVE_INDICATORS)}
           />
         );
-      case LIVE_STEPS.INDICATORS:
+      case LIVE_STEPS.LIVE_INDICATORS:
         return (
           <StepScreen
-            title="Indicators"
-            onNext={() => navigateLive(LIVE_STEPS.SMART_MONEY)}
-          />
-        );
-      case LIVE_STEPS.SMART_MONEY:
-        return (
-          <StepScreen
-            title="LuxAlgo: Smart Money Concepts"
-            onNext={() => navigateLive(LIVE_STEPS.CHANDELIER)}
-          />
-        );
-      case LIVE_STEPS.CHANDELIER:
-        return (
-          <StepScreen
-            title="Chandelier Exit"
-            onNext={() => navigateLive(LIVE_STEPS.TRAILING_STOP)}
-          />
-        );
-      case LIVE_STEPS.TRAILING_STOP:
-        return (
-          <StepScreen
-            title="LuxAlgo: Trailing Stop"
+            title="Indicators:"
+            support={
+              "i. LuxAlgo: Smart Money Concept\nii. Chandelier Exit\niii. LuxAlgo: Trailing Stop"
+            }
             onNext={() => navigateLive(LIVE_STEPS.STOCK_SCREENER)}
           />
         );
@@ -472,7 +449,7 @@ function App() {
               {
                 label: "Visible",
                 onClick: () =>
-                  navigateLive(LIVE_STEPS.LONG_RELATIVE_VOLUME, {
+                  navigateLive(LIVE_STEPS.LONG_TRADINGVIEW_CHANDELIER_BUY, {
                     direction: TRADE_DIRECTIONS.LONG,
                     startCommitted: true,
                   }),
@@ -490,26 +467,11 @@ function App() {
             ]}
           />
         );
-      case LIVE_STEPS.LONG_RELATIVE_VOLUME:
+      case LIVE_STEPS.LONG_TRADINGVIEW_CHANDELIER_BUY:
         return (
           <StepScreen
-            title="Relative Volume at Time = sort descending"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_IN_TRADINGVIEW)}
-          />
-        );
-      case LIVE_STEPS.LONG_IN_TRADINGVIEW:
-        return (
-          <StepScreen
-            title="In TradingView"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_BUY_VISIBLE)}
-          />
-        );
-      case LIVE_STEPS.LONG_BUY_VISIBLE:
-        return (
-          <StepScreen
-            title="Chandelier Exit: Buy visible"
+            title="TradingView:"
+            support="Chandelier Exit: Buy"
             tone="long"
             onNext={() => navigateLive(LIVE_STEPS.LONG_ZERODHA_ENTER)}
           />
