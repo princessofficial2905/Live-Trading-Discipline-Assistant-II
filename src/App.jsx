@@ -816,6 +816,7 @@ function HomePage({
   return (
     <section className="home-screen" aria-label="Home">
       <div className="home-hero home-title-card">
+        <DecorativeShapes variant="home" />
         <h1>Enter : Target : Enjoy</h1>
       </div>
 
@@ -910,6 +911,7 @@ function HomeSectionButton({
       type="button"
       onClick={onClick}
     >
+      <DecorativeShapes variant="card" />
       <span className="section-marker">{marker}</span>
       <span className="section-title">{title}</span>
       <small>{description}</small>
@@ -1008,6 +1010,7 @@ function StepCard({
 }) {
   return (
     <article className={`step-card tone-${tone}`}>
+      <DecorativeShapes variant={`step-${tone}`} />
       <div className="step-card-body">
         <ScreenHeader label={label} progress={progress} />
         <StepImage imageKey={imageKey} title={title} />
@@ -1053,6 +1056,7 @@ function StepImage({ imageKey, title }) {
 
   return (
     <figure className="step-image step-image-placeholder">
+      <DecorativeShapes variant="image" />
       <div className="placeholder-bars" aria-hidden="true">
         <span />
         <span />
@@ -1098,6 +1102,7 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
 
   return (
     <article className={`calculator-card tone-${side}`}>
+      <DecorativeShapes variant={`calculator-${side}`} />
       <div className="calculator-intro">
         <ScreenHeader label="CALCULATOR" progress={SIDE_LABELS[side]} />
         <h1>{SIDE_LABELS[side]} Calculator</h1>
@@ -1199,6 +1204,18 @@ function AppButton({ label, onClick, variant = "accent" }) {
     <button className={`app-button button-${variant}`} type="button" onClick={onClick}>
       {label}
     </button>
+  );
+}
+
+function DecorativeShapes({ variant = "default" }) {
+  return (
+    <div className={`decor-shapes decor-${variant}`} aria-hidden="true">
+      <span className="decor-shape shape-ring" />
+      <span className="decor-shape shape-quarter" />
+      <span className="decor-shape shape-triangle" />
+      <span className="decor-shape shape-dots" />
+      <span className="decor-shape shape-pill" />
+    </div>
   );
 }
 

@@ -98,8 +98,10 @@ button:not(:disabled) {
 }
 
 .home-hero {
+  position: relative;
   display: grid;
   gap: 12px;
+  overflow: hidden;
   padding: 24px 22px;
   border: 1px solid rgba(255, 197, 51, 0.14);
   border-radius: 28px;
@@ -145,6 +147,8 @@ button:not(:disabled) {
 }
 
 .home-title-card h1 {
+  position: relative;
+  z-index: 1;
   text-align: center;
   white-space: nowrap;
 }
@@ -249,6 +253,8 @@ button:not(:disabled) {
 }
 
 .section-title {
+  position: relative;
+  z-index: 1;
   display: block;
   color: #ffffff;
   font-size: 1.2rem;
@@ -259,6 +265,8 @@ button:not(:disabled) {
 }
 
 .section-card small {
+  position: relative;
+  z-index: 1;
   display: block;
   color: var(--muted);
   font-size: 0.94rem;
@@ -366,6 +374,7 @@ button:not(:disabled) {
 
 .step-card,
 .calculator-card {
+  position: relative;
   width: 100%;
   min-height: 0;
   flex: 1;
@@ -410,6 +419,8 @@ button:not(:disabled) {
 
 .step-card-body,
 .calculator-intro {
+  position: relative;
+  z-index: 1;
   min-height: 0;
   display: grid;
   align-content: start;
@@ -436,6 +447,7 @@ button:not(:disabled) {
 }
 
 .step-image {
+  position: relative;
   width: 100%;
   min-height: 174px;
   margin: 0;
@@ -464,6 +476,8 @@ button:not(:disabled) {
 }
 
 .placeholder-bars {
+  position: relative;
+  z-index: 1;
   width: min(190px, 72%);
   min-height: 92px;
   display: grid;
@@ -495,6 +509,8 @@ button:not(:disabled) {
 }
 
 .step-image-placeholder figcaption {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 3px;
   text-align: center;
@@ -513,6 +529,8 @@ button:not(:disabled) {
 }
 
 .step-copy {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 10px;
   text-align: left;
@@ -545,8 +563,17 @@ button:not(:disabled) {
 }
 
 .action-stack {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 10px;
+}
+
+.calculator-card > .input-grid,
+.calculator-card > .output-grid,
+.calculator-card > .app-button {
+  position: relative;
+  z-index: 1;
 }
 
 .app-button {
@@ -697,6 +724,262 @@ button:not(:disabled) {
 
 .output-danger strong {
   color: #ffe0e3;
+}
+
+.decor-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.decor-shape {
+  position: absolute;
+  display: block;
+  opacity: 0.68;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.22));
+}
+
+.shape-ring {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(2, 8, 20, 0.86) 0 39%, transparent 40%),
+    conic-gradient(
+      from 8deg,
+      var(--danger) 0 18%,
+      #ffffff 18% 31%,
+      var(--success) 31% 44%,
+      transparent 44% 58%,
+      var(--accent) 58% 78%,
+      transparent 78% 100%
+    );
+}
+
+.shape-quarter {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 90deg,
+    var(--accent) 0 25%,
+    transparent 25% 50%,
+    var(--accent-strong) 50% 75%,
+    transparent 75% 100%
+  );
+}
+
+.shape-triangle {
+  width: 0;
+  height: 0;
+  border-top: 22px solid transparent;
+  border-bottom: 22px solid transparent;
+  border-left: 38px solid var(--accent);
+}
+
+.shape-dots {
+  width: 70px;
+  height: 70px;
+  background-image: radial-gradient(circle, rgba(248, 251, 255, 0.82) 2px, transparent 3px);
+  background-size: 13px 13px;
+}
+
+.shape-pill {
+  width: 88px;
+  height: 28px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--success) 0 9px,
+    rgba(75, 217, 149, 0.3) 9px 15px
+  );
+}
+
+.decor-home .shape-ring {
+  top: -40px;
+  right: -32px;
+}
+
+.decor-home .shape-quarter {
+  right: 22px;
+  bottom: -34px;
+}
+
+.decor-home .shape-triangle {
+  top: 14px;
+  left: 20px;
+  transform: rotate(180deg) scale(0.72);
+}
+
+.decor-home .shape-dots {
+  top: 12px;
+  right: 76px;
+  opacity: 0.26;
+}
+
+.decor-home .shape-pill {
+  bottom: 12px;
+  left: -30px;
+  opacity: 0.42;
+}
+
+.decor-card .shape-ring {
+  top: -46px;
+  right: -42px;
+  width: 88px;
+  height: 88px;
+  opacity: 0.24;
+}
+
+.decor-card .shape-quarter {
+  right: 20px;
+  bottom: -42px;
+  width: 72px;
+  height: 72px;
+  opacity: 0.18;
+}
+
+.decor-card .shape-triangle {
+  top: 16px;
+  right: 22px;
+  transform: scale(0.42);
+  opacity: 0.28;
+}
+
+.decor-card .shape-dots {
+  right: 12px;
+  bottom: 8px;
+  width: 48px;
+  height: 48px;
+  opacity: 0.15;
+}
+
+.decor-card .shape-pill {
+  display: none;
+}
+
+.buy-card .shape-ring,
+.tone-buy .shape-ring,
+.decor-calculator-buy .shape-ring {
+  background:
+    radial-gradient(circle, rgba(2, 8, 20, 0.86) 0 39%, transparent 40%),
+    conic-gradient(
+      from 8deg,
+      var(--success) 0 26%,
+      #ffffff 26% 38%,
+      var(--accent) 38% 58%,
+      transparent 58% 100%
+    );
+}
+
+.sell-card .shape-ring,
+.tone-sell .shape-ring,
+.decor-calculator-sell .shape-ring {
+  background:
+    radial-gradient(circle, rgba(2, 8, 20, 0.86) 0 39%, transparent 40%),
+    conic-gradient(
+      from 8deg,
+      var(--danger) 0 30%,
+      #ffffff 30% 43%,
+      var(--accent-strong) 43% 62%,
+      transparent 62% 100%
+    );
+}
+
+.sell-card .shape-pill,
+.tone-sell .shape-pill,
+.decor-calculator-sell .shape-pill {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--danger) 0 9px,
+    rgba(255, 90, 102, 0.3) 9px 15px
+  );
+}
+
+.decor-step-default .shape-ring,
+.decor-step-buy .shape-ring,
+.decor-step-sell .shape-ring,
+.decor-calculator-buy .shape-ring,
+.decor-calculator-sell .shape-ring {
+  top: -48px;
+  right: -42px;
+  opacity: 0.32;
+}
+
+.decor-step-default .shape-quarter,
+.decor-step-buy .shape-quarter,
+.decor-step-sell .shape-quarter,
+.decor-calculator-buy .shape-quarter,
+.decor-calculator-sell .shape-quarter {
+  left: -34px;
+  bottom: 84px;
+  opacity: 0.2;
+}
+
+.decor-step-default .shape-triangle,
+.decor-step-buy .shape-triangle,
+.decor-step-sell .shape-triangle,
+.decor-calculator-buy .shape-triangle,
+.decor-calculator-sell .shape-triangle {
+  right: 26px;
+  bottom: 108px;
+  transform: rotate(180deg) scale(0.58);
+  opacity: 0.28;
+}
+
+.decor-step-default .shape-dots,
+.decor-step-buy .shape-dots,
+.decor-step-sell .shape-dots,
+.decor-calculator-buy .shape-dots,
+.decor-calculator-sell .shape-dots {
+  top: 56px;
+  right: 16px;
+  opacity: 0.15;
+}
+
+.decor-step-default .shape-pill,
+.decor-step-buy .shape-pill,
+.decor-step-sell .shape-pill,
+.decor-calculator-buy .shape-pill,
+.decor-calculator-sell .shape-pill {
+  left: 22px;
+  bottom: 24px;
+  opacity: 0.12;
+}
+
+.decor-image .shape-ring {
+  top: -44px;
+  right: -38px;
+  opacity: 0.34;
+}
+
+.decor-image .shape-quarter {
+  left: -30px;
+  bottom: -36px;
+  opacity: 0.3;
+}
+
+.decor-image .shape-triangle {
+  top: 20px;
+  left: 18px;
+  transform: scale(0.52);
+  opacity: 0.34;
+}
+
+.decor-image .shape-dots {
+  right: 18px;
+  bottom: 14px;
+  opacity: 0.17;
+}
+
+.decor-image .shape-pill {
+  left: 18px;
+  top: 22px;
+  width: 72px;
+  opacity: 0.22;
 }
 
 @keyframes screen-in {
