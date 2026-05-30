@@ -133,9 +133,18 @@ button:not(:disabled) {
 }
 
 .home-hero h1 {
-  max-width: 12ch;
-  font-size: 2.2rem;
-  line-height: 1.03;
+  max-width: 100%;
+  font-size: 1.86rem;
+  line-height: 1.08;
+}
+
+.home-title-card {
+  padding-block: 20px;
+  text-align: center;
+}
+
+.home-title-card h1 {
+  text-align: center;
 }
 
 .home-hero p:not(.app-kicker),
@@ -497,6 +506,10 @@ button:not(:disabled) {
   line-height: 1.13;
 }
 
+.step-copy h1 {
+  white-space: pre-line;
+}
+
 .support-list {
   display: grid;
   gap: 8px;
@@ -693,7 +706,7 @@ button:not(:disabled) {
   }
 
   .home-hero h1 {
-    font-size: 1.92rem;
+    font-size: 1.56rem;
   }
 
   .step-copy h1,

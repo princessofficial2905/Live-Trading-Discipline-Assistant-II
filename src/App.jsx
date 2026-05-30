@@ -82,7 +82,7 @@ const STEP_IMAGE_MAP = {
 const liveSetupSteps = withStepImageKeys(
   [
     { id: "trading-view", title: "Trading View" },
-    { id: "timeframe", title: "Timeframe = 2 minutes" },
+    { id: "timeframe", title: "Timeframe :\n\n2 Minutes" },
     { id: "first-alert", title: "Scroll through watchlist until first alert" },
   ],
   "live",
@@ -109,7 +109,7 @@ const tradeFlowSteps = {
       { id: "buy-enter", title: "Enter: Buy" },
       {
         id: "buy-sl",
-        title: "First SL: Strong Low of Trading View (T: 2 min)",
+        title: "First SL:\n\nStrong Low Of\nTrading View\n\n( T : 2 Min )",
       },
       { id: "buy-target", title: "Target: Calculator", type: "target" },
       { id: "buy-manage", title: "Trade closed?", type: "management" },
@@ -125,7 +125,7 @@ const tradeFlowSteps = {
     [
       { id: "sell-zerodha", title: "Zerodha" },
       { id: "sell-enter", title: "Enter: Sell" },
-      { id: "sell-sl", title: "First SL: Nearby Rivers" },
+      { id: "sell-sl", title: "First SL:\n\nNearby River" },
       { id: "sell-target", title: "Target: Calculator", type: "target" },
       { id: "sell-manage", title: "Trade closed?", type: "management" },
       {
@@ -146,7 +146,7 @@ const afterSessionSteps = [
   },
   {
     title:
-      "Ask ChatGPT: provide me with the symbols that are visible in my PDF but are not found in the uploaded Nifty 500 PDF",
+      "Ask ChatGpt :\n\nprovide me with the symbols that are visible in my PDF but are not found in the uploaded Nifty 500 PDF",
   },
   { title: "Delete the existing watchlist in TradingView" },
   {
@@ -156,8 +156,8 @@ const afterSessionSteps = [
   { title: "Set the timeframe to 3 minutes" },
   { title: "Indicator: LuxAlgo Smart Money Concepts" },
   { title: "Keep only those symbols that meet both parameters" },
-  { title: "Parameter A: Today's strong low" },
-  { title: "Parameter B: No red barriers except the week-low tiny line" },
+  { title: "Parameter A :\n\nToday's strong low" },
+  { title: "Parameter B :\n\nNo red barriers except the week-low tiny line" },
   { title: "Delete all remaining symbols from the watchlist" },
   { title: "List down the final symbols from the watchlist" },
   { title: "Add all of them to your Zerodha watchlist" },
@@ -814,6 +814,10 @@ function HomePage({
 }) {
   return (
     <section className="home-screen" aria-label="Home">
+      <div className="home-hero home-title-card">
+        <h1>Enter : Target : Enjoy</h1>
+      </div>
+
       <div className="status-strip" aria-live="polite">
         <span>
           {isLiveLocked
