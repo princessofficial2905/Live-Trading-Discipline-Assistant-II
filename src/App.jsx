@@ -599,12 +599,12 @@ function App() {
             {
               label: "Buy",
               onClick: () => selectLiveSide(TRADE_SIDES.BUY),
-              variant: "accent",
+              variant: "success",
             },
             {
               label: "Sell",
               onClick: () => selectLiveSide(TRADE_SIDES.SELL),
-              variant: "secondary",
+              variant: "danger",
             },
           ]}
         />
@@ -623,12 +623,12 @@ function App() {
             {
               label: "Buy",
               onClick: () => selectLiveSide(TRADE_SIDES.BUY),
-              variant: "accent",
+              variant: "success",
             },
             {
               label: "Sell",
               onClick: () => selectLiveSide(TRADE_SIDES.SELL),
-              variant: "secondary",
+              variant: "danger",
             },
           ]}
         />
@@ -664,7 +664,7 @@ function App() {
               label: `Open ${sideLabel} Calculator / Set Target`,
               onClick: () =>
                 openCalculator(liveSide, CALCULATOR_RETURN.LIVE_MANAGEMENT),
-              variant: "accent",
+              variant: liveSide === TRADE_SIDES.BUY ? "success" : "danger",
             },
             {
               label: "Continue",
@@ -694,13 +694,13 @@ function App() {
             {
               label: "Target?",
               onClick: () => handleTradeClosed("target"),
-              variant: "accent",
+              variant: "success",
             },
             {
               label: `Open ${sideLabel} Calculator`,
               onClick: () =>
                 openCalculator(liveSide, CALCULATOR_RETURN.LIVE_MANAGEMENT),
-              variant: "ghost",
+              variant: liveSide === TRADE_SIDES.BUY ? "success" : "danger",
             },
           ]}
         />
@@ -718,6 +718,7 @@ function App() {
           {
             label: step.type === "cleanup" ? "Complete Session" : "Next",
             onClick: nextLiveStep,
+            variant: step.type === "cleanup" ? "success" : "accent",
           },
         ]}
       />

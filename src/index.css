@@ -24,6 +24,7 @@
   --danger: #ff5a66;
   --danger-deep: #d72e43;
   --success: #4bd995;
+  --success-deep: #149b63;
   --navy: #0a1c31;
   --shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
   --card-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
@@ -271,13 +272,25 @@ button:not(:disabled) {
 }
 
 .buy-card {
-  border-color: rgba(255, 197, 51, 0.26);
+  border-color: rgba(75, 217, 149, 0.3);
+}
+
+.buy-card::before {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 36%),
+    linear-gradient(135deg, var(--success), var(--success-deep));
+  box-shadow: 0 12px 26px rgba(20, 155, 99, 0.28);
+}
+
+.sell-card {
+  border-color: rgba(255, 90, 102, 0.32);
 }
 
 .sell-card::before {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.4), transparent 36%),
-    linear-gradient(135deg, #ff9c4a, #ff5f35);
+    linear-gradient(135deg, var(--danger), var(--danger-deep));
+  box-shadow: 0 12px 26px rgba(215, 46, 67, 0.25);
 }
 
 .is-locked {
@@ -379,13 +392,17 @@ button:not(:disabled) {
 }
 
 .tone-buy {
-  border-color: rgba(255, 197, 51, 0.26);
+  border-color: rgba(75, 217, 149, 0.3);
+  background:
+    linear-gradient(145deg, rgba(75, 217, 149, 0.11), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 70%),
+    var(--panel);
 }
 
 .tone-sell {
-  border-color: rgba(255, 148, 22, 0.28);
+  border-color: rgba(255, 90, 102, 0.34);
   background:
-    linear-gradient(145deg, rgba(255, 148, 22, 0.12), transparent 36%),
+    linear-gradient(145deg, rgba(255, 90, 102, 0.12), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 70%),
     var(--panel);
 }
@@ -562,6 +579,14 @@ button:not(:disabled) {
     linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 100%),
     linear-gradient(135deg, #ffb56b, #ff6e35);
   color: #241000;
+}
+
+.button-success {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 100%),
+    linear-gradient(135deg, var(--success), var(--success-deep));
+  color: #031c12;
+  box-shadow: 0 16px 34px rgba(20, 155, 99, 0.25);
 }
 
 .button-danger {
