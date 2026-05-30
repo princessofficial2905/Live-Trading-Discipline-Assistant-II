@@ -814,14 +814,6 @@ function HomePage({
 }) {
   return (
     <section className="home-screen" aria-label="Home">
-      <div className="home-hero">
-        <p className="app-kicker">Live Trading Discipline Assistant II</p>
-        <h1>Trade calm. Follow one clean step.</h1>
-        <p>
-          A focused mobile ritual for entries, exits, calculators, and review.
-        </p>
-      </div>
-
       <div className="status-strip" aria-live="polite">
         <span>
           {isLiveLocked
