@@ -4,18 +4,31 @@ Live Trading Discipline Assistant II is a mobile-first React + Vite web app for 
 
 ## Sections
 
-1. Live Trading Session Steps
-2. After-Session
-3. TradingView Alerts Steps
+1. Live Trading Session
+2. After Session Ritual
+3. Buy Calculator
+4. Sell Calculator
 
-## Discipline Lock
+## Live Flow And Discipline Lock
 
-The live trading flow has a 5-minute committed mode after a valid symbol path is selected. The lock starts only when:
+The live trading flow starts with Trading View, a 2-minute timeframe check, watchlist scrolling, and a Buy/Sell choice. After a trade reaches `Trade closed?`:
 
-- the bullish path confirms `Visible`
-- the bearish path confirms `Sell visible`
+- `Target?` ends the session, shows `Remove any active ATO / Alerts`, then locks Live Trading Session for 5 minutes.
+- First-round `SL?` opens one last retry page: `Any fresh buy/sell alert?`
+- The retry page can start one more Buy or Sell cycle.
+- On the second cycle, either `SL?` or `Target?` ends at `Remove any active ATO / Alerts`, then locks Live Trading Session for 5 minutes.
 
-During committed mode, the live flow hides Home and Back controls so the trade path continues forward to either SL or Target. If the app reloads during the lock, the home screen blocks a fresh live trading session until the countdown expires.
+During the lock, the home screen blocks a fresh Live Trading Session and shows a friendly countdown message. If the app reloads during the lock, the lock survives through `localStorage`.
+
+The selected active side is saved in `localStorage`:
+
+- If the active side is `Buy`, the Buy Calculator remains usable and the Sell Calculator is locked during trading-session time.
+- If the active side is `Sell`, the Sell Calculator remains usable and the Buy Calculator is locked during trading-session time.
+- Outside 9:00 AM to 3:00 PM, calculator locks do not apply.
+
+## Step Images
+
+Each step renders through a reusable image slot. When final ordered images are ready, put them in `public/step-images/` and update `STEP_IMAGE_MAP` in `src/App.jsx`.
 
 ## Data And Storage
 
@@ -24,7 +37,7 @@ During committed mode, the live flow hides Home and Back controls so the trade p
 - No database
 - No login or authentication
 - No permanent personal trade data saving
-- Uses `localStorage` only for the `liveTradingCommittedUntil` timestamp
+- Uses `localStorage` for the live-session lock timestamp and active side
 - Calculator inputs and trade details are not saved permanently
 
 ## Development

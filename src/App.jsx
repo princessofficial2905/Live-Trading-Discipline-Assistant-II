@@ -1,60 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
 
-const LOCK_STORAGE_KEY = "liveTradingCommittedUntil";
+const LIVE_LOCK_STORAGE_KEY = "liveTradingSessionLockedUntil";
+const LEGACY_LOCK_STORAGE_KEY = "liveTradingCommittedUntil";
+const ACTIVE_SIDE_STORAGE_KEY = "liveTradingActiveSide";
 const LOCK_DURATION_MS = 5 * 60 * 1000;
+const TRADING_SESSION_START_MINUTES = 9 * 60;
+const TRADING_SESSION_END_MINUTES = 15 * 60;
 
 const SECTIONS = {
   HOME: "home",
   LIVE: "live",
   AFTER_SESSION: "afterSession",
-  ALERTS: "alerts",
+  CALCULATOR: "calculator",
 };
 
-const TRADE_DIRECTIONS = {
-  LONG: "long",
-  SHORT: "short",
+const TRADE_SIDES = {
+  BUY: "buy",
+  SELL: "sell",
 };
 
-const LIVE_STEPS = {
-  TRADING_VIEW: "tradingView",
-  TIMEFRAME: "timeframe",
-  LIVE_INDICATORS: "liveIndicators",
-  STOCK_SCREENER: "stockScreener",
-  BULLISH_SCREENER: "bullishScreener",
-  BULLISH_SELECT_SYMBOL: "bullishSelectSymbol",
-  BULLISH_SYMBOL_VISIBLE: "bullishSymbolVisible",
-  LONG_TRADINGVIEW_CHANDELIER_BUY: "longTradingViewChandelierBuy",
-  LONG_ZERODHA_ENTER: "longZerodhaEnter",
-  LONG_ENTERING: "longEntering",
-  LONG_SL: "longSl",
-  LONG_TARGET: "longTarget",
-  LONG_CALCULATOR: "longCalculator",
-  LONG_RESULT_DECISION: "longResultDecision",
-  LONG_SL_RESULT: "longSlResult",
-  LONG_TARGET_RESULT: "longTargetResult",
-  BEARISH_INTRO: "bearishIntro",
-  BEARISH_SCREENER: "bearishScreener",
-  BEARISH_SELECT_SYMBOL: "bearishSelectSymbol",
-  BEARISH_RESULT_VISIBLE: "bearishResultVisible",
-  BEARISH_BACK_TO_BULLISH: "bearishBackToBullish",
-  SHORT_SELL_VISIBLE: "shortSellVisible",
-  SHORT_STRONG_HIGH: "shortStrongHigh",
-  SHORT_ZERODHA_ENTER: "shortZerodhaEnter",
-  SHORT_ENTERING: "shortEntering",
-  SHORT_SL: "shortSl",
-  SHORT_TARGET: "shortTarget",
-  SHORT_CALCULATOR: "shortCalculator",
-  SHORT_RESULT_DECISION: "shortResultDecision",
-  SHORT_SL_RESULT: "shortSlResult",
-  SHORT_TARGET_RESULT: "shortTargetResult",
+const SIDE_LABELS = {
+  [TRADE_SIDES.BUY]: "Buy",
+  [TRADE_SIDES.SELL]: "Sell",
 };
 
-const terminalLiveSteps = new Set([
-  LIVE_STEPS.LONG_SL_RESULT,
-  LIVE_STEPS.LONG_TARGET_RESULT,
-  LIVE_STEPS.SHORT_SL_RESULT,
-  LIVE_STEPS.SHORT_TARGET_RESULT,
-]);
+const CALCULATOR_RETURN = {
+  HOME: "home",
+  LIVE_MANAGEMENT: "liveManagement",
+};
 
 const initialCalculatorInputs = {
   entryPrice: "",
@@ -63,6 +36,106 @@ const initialCalculatorInputs = {
   target2Profit: "100",
   maxRisk: "50",
   checkPrice: "",
+};
+
+// Add ordered step images here later. Values can be public paths such as
+// `${import.meta.env.BASE_URL}step-images/live-01.png` or hosted image URLs.
+const STEP_IMAGE_MAP = {
+  "live-01": "",
+  "live-02": "",
+  "live-03": "",
+  "live-04": "",
+  "retry-01": "",
+  "buy-01": "",
+  "buy-02": "",
+  "buy-03": "",
+  "buy-04": "",
+  "buy-05": "",
+  "buy-06": "",
+  "sell-01": "",
+  "sell-02": "",
+  "sell-03": "",
+  "sell-04": "",
+  "sell-05": "",
+  "sell-06": "",
+  "after-session-01": "",
+  "after-session-02": "",
+  "after-session-03": "",
+  "after-session-04": "",
+  "after-session-05": "",
+  "after-session-06": "",
+  "after-session-07": "",
+  "after-session-08": "",
+  "after-session-09": "",
+  "after-session-10": "",
+  "after-session-11": "",
+  "after-session-12": "",
+  "after-session-13": "",
+  "after-session-14": "",
+  "after-session-15": "",
+  "after-session-16": "",
+  "after-session-17": "",
+  "after-session-18": "",
+  "after-session-19": "",
+};
+
+const liveSetupSteps = withStepImageKeys(
+  [
+    { id: "trading-view", title: "Trading View" },
+    { id: "timeframe", title: "Timeframe = 2 minutes" },
+    { id: "first-alert", title: "Scroll through watchlist until first alert" },
+  ],
+  "live",
+);
+
+const liveSideChoiceStep = {
+  id: "choose-side",
+  title: "Choose trade side",
+  support: "Use the first alert only. Stay with the sequence.",
+  imageKey: "live-04",
+};
+
+const retryChoiceStep = {
+  id: "fresh-alert-retry",
+  title: "Any fresh buy/sell alert?",
+  support: "SL hit. One last clean try only.",
+  imageKey: "retry-01",
+};
+
+const tradeFlowSteps = {
+  [TRADE_SIDES.BUY]: withStepImageKeys(
+    [
+      { id: "buy-zerodha", title: "Zerodha" },
+      { id: "buy-enter", title: "Enter: Buy" },
+      {
+        id: "buy-sl",
+        title: "First SL: Strong Low of Trading View (T: 2 min)",
+      },
+      { id: "buy-target", title: "Target: Calculator", type: "target" },
+      { id: "buy-manage", title: "Trade closed?", type: "management" },
+      {
+        id: "buy-remove-alerts",
+        title: "Remove any active ATO / Alerts",
+        type: "cleanup",
+      },
+    ],
+    "buy",
+  ),
+  [TRADE_SIDES.SELL]: withStepImageKeys(
+    [
+      { id: "sell-zerodha", title: "Zerodha" },
+      { id: "sell-enter", title: "Enter: Sell" },
+      { id: "sell-sl", title: "First SL: Nearby Rivers" },
+      { id: "sell-target", title: "Target: Calculator", type: "target" },
+      { id: "sell-manage", title: "Trade closed?", type: "management" },
+      {
+        id: "sell-remove-alerts",
+        title: "Remove any active ATO / Alerts",
+        type: "cleanup",
+      },
+    ],
+    "sell",
+  ),
 };
 
 const afterSessionSteps = [
@@ -99,86 +172,85 @@ const afterSessionSteps = [
   { title: "After-session steps complete.", final: true },
 ];
 
-const alertsSteps = [
-  { title: "Nifty Total Market indice" },
-  { title: "Alert - I" },
-  { title: "Condition: LuxAlgo" },
-  { title: "Bullish BOS" },
-  { title: "Interval: 1 min" },
-  { title: "Trigger: Once Per Minute" },
-  { title: "Expiration: 1 week" },
-  { title: "Message: BUY! BUY! BUY!" },
-  { title: "Notifications: Toasts + Sound" },
-  { title: "Alert - II" },
-  { title: "Condition: LuxAlgo" },
-  { title: "Bearish BOS" },
-  { title: "Interval: 1 min" },
-  { title: "Trigger: Once Per Minute" },
-  { title: "Expiration: 1 week" },
-  { title: "Message: SELL! SELL! SELL!" },
-  { title: "Notifications: Toasts + Sound" },
-  { title: "TradingView alerts setup complete.", final: true },
-];
+const afterSessionFlowSteps = withStepImageKeys(
+  afterSessionSteps,
+  "after-session",
+);
 
-const bullishFilterGuideSteps = [
-  { title: "Bullish Screener", support: "Green" },
-  { title: "India / NSE" },
-  { title: "Watchlist: Watchlist" },
-  { title: "Price Change %" },
-  { title: "Interval: 1 day" },
-  { title: "Between: 0% to 1.2%" },
-  { title: "Relative Volume at Time" },
-  { title: "Above (>) 1" },
-  { title: "Moving Average Rating" },
-  { title: "Interval: 1 day" },
-  { title: "Buy" },
-  { title: "Strong Buy" },
-  { title: "Gap %" },
-  { title: "Interval: 1 day" },
-  { title: "Between: -0.8% to 0.8%" },
-  { title: "Relative Volume at Time in columns" },
-  { title: "Sorted by descending" },
-  { title: "Bullish filter guide complete.", final: true },
-];
+function withStepImageKeys(steps, prefix) {
+  return steps.map((step, index) => ({
+    ...step,
+    imageKey: step.imageKey ?? `${prefix}-${String(index + 1).padStart(2, "0")}`,
+  }));
+}
 
-const bearishFilterGuideSteps = [
-  { title: "Bearish Screener", support: "Red" },
-  { title: "India / NSE" },
-  { title: "Watchlist: Watchlist" },
-  { title: "Price Change %" },
-  { title: "Interval: 1 day" },
-  { title: "Between: -1.2% to 0%" },
-  { title: "Relative Volume at Time" },
-  { title: "Above (>) 1" },
-  { title: "Moving Average Rating" },
-  { title: "Interval: 1 day" },
-  { title: "Sell" },
-  { title: "Strong Sell" },
-  { title: "Momentum" },
-  { title: "Below 0" },
-  { title: "Length: 10" },
-  { title: "Interval: 5 minutes" },
-  { title: "Gap %" },
-  { title: "Interval: 1 day" },
-  { title: "Between: -0.8% to 0.8%" },
-  { title: "Relative Volume at Time in columns" },
-  { title: "Sorted by descending" },
-  { title: "Bearish filter guide complete.", final: true },
-];
+function createCalculatorInputs() {
+  return { ...initialCalculatorInputs };
+}
 
-function readCommittedUntil() {
+function isTradeSide(value) {
+  return value === TRADE_SIDES.BUY || value === TRADE_SIDES.SELL;
+}
+
+function readLiveLockUntil() {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const stored = Number(window.localStorage.getItem(LOCK_STORAGE_KEY));
+  const stored = Number(
+    window.localStorage.getItem(LIVE_LOCK_STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_LOCK_STORAGE_KEY),
+  );
 
   if (!Number.isFinite(stored) || stored <= Date.now()) {
-    window.localStorage.removeItem(LOCK_STORAGE_KEY);
+    window.localStorage.removeItem(LIVE_LOCK_STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_LOCK_STORAGE_KEY);
     return null;
   }
 
   return stored;
+}
+
+function saveLiveLockUntil(timestamp) {
+  window.localStorage.setItem(LIVE_LOCK_STORAGE_KEY, String(timestamp));
+  window.localStorage.removeItem(LEGACY_LOCK_STORAGE_KEY);
+}
+
+function readActiveSide() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(ACTIVE_SIDE_STORAGE_KEY);
+
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+
+    if (parsed && isTradeSide(parsed.side)) {
+      return parsed.side;
+    }
+  } catch {
+    if (isTradeSide(stored)) {
+      return stored;
+    }
+  }
+
+  window.localStorage.removeItem(ACTIVE_SIDE_STORAGE_KEY);
+  return null;
+}
+
+function saveActiveSide(side) {
+  window.localStorage.setItem(
+    ACTIVE_SIDE_STORAGE_KEY,
+    JSON.stringify({
+      side,
+      updatedAt: Date.now(),
+    }),
+  );
 }
 
 function formatCountdown(milliseconds) {
@@ -187,6 +259,17 @@ function formatCountdown(milliseconds) {
   const seconds = String(totalSeconds % 60).padStart(2, "0");
 
   return `${minutes}:${seconds}`;
+}
+
+function isTradingSessionTime(timestamp) {
+  const localDate = new Date(timestamp);
+  const minutesSinceMidnight =
+    localDate.getHours() * 60 + localDate.getMinutes();
+
+  return (
+    minutesSinceMidnight >= TRADING_SESSION_START_MINUTES &&
+    minutesSinceMidnight < TRADING_SESSION_END_MINUTES
+  );
 }
 
 function parseNumber(value) {
@@ -208,15 +291,7 @@ function formatMoney(value) {
   });
 }
 
-function isAtOrAfter930(timestamp) {
-  const localDate = new Date(timestamp);
-  const minutesSinceMidnight =
-    localDate.getHours() * 60 + localDate.getMinutes();
-
-  return minutesSinceMidnight >= 9 * 60 + 30;
-}
-
-function getCalculatorOutputs(inputs, direction) {
+function getCalculatorOutputs(inputs, side) {
   const entryPrice = parseNumber(inputs.entryPrice);
   const quantity = parseNumber(inputs.quantity);
   const target1Profit = parseNumber(inputs.target1Profit);
@@ -240,10 +315,10 @@ function getCalculatorOutputs(inputs, direction) {
     };
   }
 
-  const isShort = direction === TRADE_DIRECTIONS.SHORT;
-  const directionMultiplier = isShort ? -1 : 1;
+  const isSell = side === TRADE_SIDES.SELL;
+  const directionMultiplier = isSell ? -1 : 1;
   const checkPnl = Number.isFinite(checkPrice)
-    ? (isShort ? entryPrice - checkPrice : checkPrice - entryPrice) * quantity
+    ? (isSell ? entryPrice - checkPrice : checkPrice - entryPrice) * quantity
     : Number.NaN;
 
   return {
@@ -256,31 +331,44 @@ function getCalculatorOutputs(inputs, direction) {
 
 function App() {
   const [mainSection, setMainSection] = useState(SECTIONS.HOME);
-  const [liveStep, setLiveStep] = useState(LIVE_STEPS.TRADING_VIEW);
-  const [liveHistory, setLiveHistory] = useState([]);
-  const [activeFilterGuide, setActiveFilterGuide] = useState(null);
-  const [filterGuideIndex, setFilterGuideIndex] = useState(0);
+  const [livePhase, setLivePhase] = useState("setup");
+  const [liveSetupIndex, setLiveSetupIndex] = useState(0);
+  const [liveTradeIndex, setLiveTradeIndex] = useState(0);
+  const [liveSide, setLiveSide] = useState(null);
+  const [liveAttempt, setLiveAttempt] = useState(1);
   const [afterSessionIndex, setAfterSessionIndex] = useState(0);
-  const [alertsIndex, setAlertsIndex] = useState(0);
-  const [tradeDirection, setTradeDirection] = useState(null);
-  const [calculatorInputs, setCalculatorInputs] = useState(
-    initialCalculatorInputs,
+  const [activeSide, setActiveSide] = useState(() => readActiveSide());
+  const [calculatorSide, setCalculatorSide] = useState(TRADE_SIDES.BUY);
+  const [calculatorReturn, setCalculatorReturn] = useState(
+    CALCULATOR_RETURN.HOME,
   );
-  const [committedUntil, setCommittedUntil] = useState(() =>
-    readCommittedUntil(),
-  );
+  const [calculatorInputs, setCalculatorInputs] = useState(() => ({
+    [TRADE_SIDES.BUY]: createCalculatorInputs(),
+    [TRADE_SIDES.SELL]: createCalculatorInputs(),
+  }));
+  const [liveLockUntil, setLiveLockUntil] = useState(() => readLiveLockUntil());
   const [now, setNow] = useState(() => Date.now());
+  const [homeNotice, setHomeNotice] = useState("");
 
-  const isCommittedActive =
-    Number.isFinite(committedUntil) && committedUntil > now;
-  const committedCountdown = isCommittedActive
-    ? formatCountdown(committedUntil - now)
+  const tradingSessionOpen = isTradingSessionTime(now);
+  const isLiveLocked = Number.isFinite(liveLockUntil) && liveLockUntil > now;
+  const liveCountdown = isLiveLocked
+    ? formatCountdown(liveLockUntil - now)
     : "00:00";
-  const notVisibleUnlocked = isAtOrAfter930(now);
-  const isTerminalLiveStep = terminalLiveSteps.has(liveStep);
+  const currentCalculatorInputs = calculatorInputs[calculatorSide];
   const calculatorOutputs = useMemo(
-    () => getCalculatorOutputs(calculatorInputs, tradeDirection),
-    [calculatorInputs, tradeDirection],
+    () => getCalculatorOutputs(currentCalculatorInputs, calculatorSide),
+    [calculatorSide, currentCalculatorInputs],
+  );
+  const buyCalculatorLockMessage = getCalculatorLockMessage(
+    TRADE_SIDES.BUY,
+    activeSide,
+    tradingSessionOpen,
+  );
+  const sellCalculatorLockMessage = getCalculatorLockMessage(
+    TRADE_SIDES.SELL,
+    activeSide,
+    tradingSessionOpen,
   );
 
   useEffect(() => {
@@ -290,416 +378,350 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!committedUntil || committedUntil > now) {
+    if (!liveLockUntil || liveLockUntil > now) {
       return;
     }
 
-    window.localStorage.removeItem(LOCK_STORAGE_KEY);
-    setCommittedUntil(null);
-  }, [committedUntil, now]);
+    window.localStorage.removeItem(LIVE_LOCK_STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_LOCK_STORAGE_KEY);
+    setLiveLockUntil(null);
+  }, [liveLockUntil, now]);
 
   function resetLiveState() {
-    setLiveStep(LIVE_STEPS.TRADING_VIEW);
-    setLiveHistory([]);
-    setActiveFilterGuide(null);
-    setFilterGuideIndex(0);
-    setTradeDirection(null);
-    setCalculatorInputs(initialCalculatorInputs);
+    setLivePhase("setup");
+    setLiveSetupIndex(0);
+    setLiveTradeIndex(0);
+    setLiveSide(null);
+    setLiveAttempt(1);
   }
 
-  function goHome() {
+  function goHome(options = {}) {
     resetLiveState();
     setAfterSessionIndex(0);
-    setAlertsIndex(0);
     setMainSection(SECTIONS.HOME);
+
+    if (!options.keepNotice) {
+      setHomeNotice("");
+    }
   }
 
   function startLiveFlow() {
-    if (isCommittedActive) {
+    if (isLiveLocked) {
+      setHomeNotice(
+        "Live Trading Session is locked for 5 minutes. Use the active trade calculator if needed.",
+      );
       return;
     }
 
     resetLiveState();
+    setHomeNotice("");
     setMainSection(SECTIONS.LIVE);
   }
 
   function startAfterSessionFlow() {
     setAfterSessionIndex(0);
+    setHomeNotice("");
     setMainSection(SECTIONS.AFTER_SESSION);
   }
 
-  function startAlertsFlow() {
-    setAlertsIndex(0);
-    setMainSection(SECTIONS.ALERTS);
+  function getCalculatorLockMessageFor(side) {
+    return getCalculatorLockMessage(side, activeSide, tradingSessionOpen);
   }
 
-  function navigateLive(nextStep, options = {}) {
-    if (options.direction) {
-      setTradeDirection(options.direction);
-    }
+  function openCalculator(side, returnTarget = CALCULATOR_RETURN.HOME) {
+    const lockMessage = getCalculatorLockMessageFor(side);
 
-    if (options.startCommitted) {
-      const nextCommittedUntil = Date.now() + LOCK_DURATION_MS;
-      window.localStorage.setItem(LOCK_STORAGE_KEY, String(nextCommittedUntil));
-      setCommittedUntil(nextCommittedUntil);
-      setNow(Date.now());
-    }
+    if (lockMessage) {
+      setHomeNotice(lockMessage);
 
-    setLiveHistory((currentHistory) => [...currentHistory, liveStep]);
-    setLiveStep(nextStep);
-  }
+      if (mainSection !== SECTIONS.HOME) {
+        return;
+      }
 
-  function replaceLive(nextStep) {
-    setLiveStep(nextStep);
-  }
-
-  function goLiveBack() {
-    if (liveHistory.length === 0) {
-      goHome();
       return;
     }
 
-    const previousStep = liveHistory[liveHistory.length - 1];
-    setLiveHistory((currentHistory) => currentHistory.slice(0, -1));
-    setLiveStep(previousStep);
+    setCalculatorSide(side);
+    setCalculatorReturn(returnTarget);
+    setHomeNotice("");
+    setMainSection(SECTIONS.CALCULATOR);
   }
 
-  function openFilterGuide(type) {
-    setActiveFilterGuide(type);
-    setFilterGuideIndex(0);
+  function closeCalculator() {
+    if (calculatorReturn === CALCULATOR_RETURN.LIVE_MANAGEMENT && liveSide) {
+      setMainSection(SECTIONS.LIVE);
+      setLivePhase("trade");
+      setLiveTradeIndex(getManagementStepIndex(liveSide));
+      return;
+    }
+
+    goHome();
   }
 
-  function closeFilterGuide() {
-    setActiveFilterGuide(null);
-    setFilterGuideIndex(0);
-  }
-
-  function updateCalculatorInput(field, value) {
+  function updateCalculatorInput(side, field, value) {
     setCalculatorInputs((currentInputs) => ({
       ...currentInputs,
-      [field]: value,
+      [side]: {
+        ...currentInputs[side],
+        [field]: value,
+      },
     }));
   }
 
-  function renderLiveStep() {
-    switch (liveStep) {
-      case LIVE_STEPS.TRADING_VIEW:
-        return (
-          <StepScreen
-            title="TradingView"
-            onNext={() => navigateLive(LIVE_STEPS.TIMEFRAME)}
-          />
-        );
-      case LIVE_STEPS.TIMEFRAME:
-        return (
-          <StepScreen
-            title="Timeframe = 2 minutes"
-            onNext={() => navigateLive(LIVE_STEPS.LIVE_INDICATORS)}
-          />
-        );
-      case LIVE_STEPS.LIVE_INDICATORS:
-        return (
-          <StepScreen
-            title="Indicators:"
-            support={
-              "i. LuxAlgo: Smart Money Concept\nii. Chandelier Exit\niii. LuxAlgo: Trailing Stop"
-            }
-            onNext={() => navigateLive(LIVE_STEPS.STOCK_SCREENER)}
-          />
-        );
-      case LIVE_STEPS.STOCK_SCREENER:
-        return (
-          <StepScreen
-            title="Open Stock Screener"
-            onNext={() => navigateLive(LIVE_STEPS.BULLISH_SCREENER)}
-          />
-        );
-      case LIVE_STEPS.BULLISH_SCREENER:
-        return (
-          <DecisionScreen
-            title="Bullish Screener"
-            support="Green"
-            options={[
-              {
-                label: "Filters Guide (Bullish)",
-                onClick: () => openFilterGuide("bullish"),
-                variant: "secondary",
-              },
-              {
-                label: "Done",
-                onClick: () =>
-                  navigateLive(LIVE_STEPS.BULLISH_SELECT_SYMBOL),
-                variant: "success",
-              },
-            ]}
-          />
-        );
-      case LIVE_STEPS.BULLISH_SELECT_SYMBOL:
-        return (
-          <StepScreen
-            title="Select symbol on the top of the list"
-            onNext={() => navigateLive(LIVE_STEPS.BULLISH_SYMBOL_VISIBLE)}
-          />
-        );
-      case LIVE_STEPS.BULLISH_SYMBOL_VISIBLE:
-        return (
-          <DecisionScreen
-            title="Symbol visible?"
-            options={[
-              {
-                label: "Visible",
-                onClick: () =>
-                  navigateLive(LIVE_STEPS.LONG_TRADINGVIEW_CHANDELIER_BUY, {
-                    direction: TRADE_DIRECTIONS.LONG,
-                    startCommitted: true,
-                  }),
-                variant: "success",
-              },
-              {
-                label: "Not visible",
-                onClick: () => navigateLive(LIVE_STEPS.BEARISH_INTRO),
-                disabled: !notVisibleUnlocked,
-                helper: !notVisibleUnlocked
-                  ? "Not visible option unlocks after 9:30"
-                  : "",
-                variant: "danger",
-              },
-            ]}
-          />
-        );
-      case LIVE_STEPS.LONG_TRADINGVIEW_CHANDELIER_BUY:
-        return (
-          <StepScreen
-            title="TradingView:"
-            support="Chandelier Exit: Buy"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_ZERODHA_ENTER)}
-          />
-        );
-      case LIVE_STEPS.LONG_ZERODHA_ENTER:
-        return (
-          <StepScreen
-            title="Zerodha: Enter"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_ENTERING)}
-          />
-        );
-      case LIVE_STEPS.LONG_ENTERING:
-        return (
-          <StepScreen
-            title="I am entering"
-            actionLabel="I am entering"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_SL)}
-          />
-        );
-      case LIVE_STEPS.LONG_SL:
-        return (
-          <StepScreen
-            title="SL: LuxAlgo Trailing Stop"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_TARGET)}
-          />
-        );
-      case LIVE_STEPS.LONG_TARGET:
-        return (
-          <StepScreen
-            title="Target: Calculator"
-            actionLabel="Open Calculator"
-            tone="long"
-            onNext={() => navigateLive(LIVE_STEPS.LONG_CALCULATOR)}
-          />
-        );
-      case LIVE_STEPS.LONG_CALCULATOR:
-        return (
-          <CalculatorScreen
-            direction={TRADE_DIRECTIONS.LONG}
-            inputs={calculatorInputs}
-            outputs={calculatorOutputs}
-            onChange={updateCalculatorInput}
-            onNext={() => navigateLive(LIVE_STEPS.LONG_RESULT_DECISION)}
-          />
-        );
-      case LIVE_STEPS.LONG_RESULT_DECISION:
-        return (
-          <DecisionScreen
-            title="What happened?"
-            options={[
-              {
-                label: "SL?",
-                onClick: () => navigateLive(LIVE_STEPS.LONG_SL_RESULT),
-                variant: "danger",
-              },
-              {
-                label: "Target?",
-                onClick: () => navigateLive(LIVE_STEPS.LONG_TARGET_RESULT),
-                variant: "success",
-              },
-            ]}
-          />
-        );
-      case LIVE_STEPS.LONG_SL_RESULT:
-        return <ResultScreen message="Koi ni, you did your best." onHome={goHome} />;
-      case LIVE_STEPS.LONG_TARGET_RESULT:
-        return <ResultScreen message="Congratulations, gurl." onHome={goHome} />;
-      case LIVE_STEPS.BEARISH_INTRO:
-        return (
-          <StepScreen
-            title="If no symbol visible in bullish screener, try bearish screener"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.BEARISH_SCREENER)}
-          />
-        );
-      case LIVE_STEPS.BEARISH_SCREENER:
-        return (
-          <DecisionScreen
-            title="Bearish Screener"
-            support="Red"
-            tone="short"
-            options={[
-              {
-                label: "Filters Guide (Bearish)",
-                onClick: () => openFilterGuide("bearish"),
-                variant: "secondary",
-              },
-              {
-                label: "Done",
-                onClick: () =>
-                  navigateLive(LIVE_STEPS.BEARISH_SELECT_SYMBOL),
-                variant: "danger",
-              },
-            ]}
-          />
-        );
-      case LIVE_STEPS.BEARISH_SELECT_SYMBOL:
-        return (
-          <StepScreen
-            title="Select symbol on the top of the list"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.BEARISH_RESULT_VISIBLE)}
-          />
-        );
-      case LIVE_STEPS.BEARISH_RESULT_VISIBLE:
-        return (
-          <DecisionScreen
-            title="Bearish result visible?"
-            tone="short"
-            options={[
-              {
-                label: "Visible",
-                onClick: () => navigateLive(LIVE_STEPS.SHORT_SELL_VISIBLE),
-                variant: "success",
-              },
-              {
-                label: "Not visible",
-                onClick: () =>
-                  navigateLive(LIVE_STEPS.BEARISH_BACK_TO_BULLISH),
-                variant: "secondary",
-              },
-            ]}
-          />
-        );
-      case LIVE_STEPS.BEARISH_BACK_TO_BULLISH:
-        return (
-          <StepScreen
-            title="Go back to Bullish Screener"
-            actionLabel="Back to Bullish Screener"
-            onNext={() => replaceLive(LIVE_STEPS.BULLISH_SCREENER)}
-          />
-        );
-      case LIVE_STEPS.SHORT_SELL_VISIBLE:
-        return (
-          <StepScreen
-            title="Chandelier Exit: Sell visible"
-            actionLabel="Sell visible"
-            tone="short"
-            onNext={() =>
-              navigateLive(LIVE_STEPS.SHORT_STRONG_HIGH, {
-                direction: TRADE_DIRECTIONS.SHORT,
-                startCommitted: true,
-              })
-            }
-          />
-        );
-      case LIVE_STEPS.SHORT_STRONG_HIGH:
-        return (
-          <StepScreen
-            title="Today's strong high visible"
-            actionLabel="Visible"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.SHORT_ZERODHA_ENTER)}
-          />
-        );
-      case LIVE_STEPS.SHORT_ZERODHA_ENTER:
-        return (
-          <StepScreen
-            title="Zerodha: Enter"
-            support="Sell"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.SHORT_ENTERING)}
-          />
-        );
-      case LIVE_STEPS.SHORT_ENTERING:
-        return (
-          <StepScreen
-            title="I am entering"
-            actionLabel="I am entering"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.SHORT_SL)}
-          />
-        );
-      case LIVE_STEPS.SHORT_SL:
-        return (
-          <StepScreen
-            title="SL: LuxAlgo Trailing Stop"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.SHORT_TARGET)}
-          />
-        );
-      case LIVE_STEPS.SHORT_TARGET:
-        return (
-          <StepScreen
-            title="Target: Calculator"
-            actionLabel="Open Calculator"
-            tone="short"
-            onNext={() => navigateLive(LIVE_STEPS.SHORT_CALCULATOR)}
-          />
-        );
-      case LIVE_STEPS.SHORT_CALCULATOR:
-        return (
-          <CalculatorScreen
-            direction={TRADE_DIRECTIONS.SHORT}
-            inputs={calculatorInputs}
-            outputs={calculatorOutputs}
-            onChange={updateCalculatorInput}
-            onNext={() => navigateLive(LIVE_STEPS.SHORT_RESULT_DECISION)}
-          />
-        );
-      case LIVE_STEPS.SHORT_RESULT_DECISION:
-        return (
-          <DecisionScreen
-            title="What happened?"
-            options={[
-              {
-                label: "SL?",
-                onClick: () => navigateLive(LIVE_STEPS.SHORT_SL_RESULT),
-                variant: "danger",
-              },
-              {
-                label: "Target?",
-                onClick: () => navigateLive(LIVE_STEPS.SHORT_TARGET_RESULT),
-                variant: "success",
-              },
-            ]}
-          />
-        );
-      case LIVE_STEPS.SHORT_SL_RESULT:
-        return <ResultScreen message="Koi ni, you gave your best." onHome={goHome} />;
-      case LIVE_STEPS.SHORT_TARGET_RESULT:
-        return <ResultScreen message="Congratulations, gurl." onHome={goHome} />;
-      default:
-        return null;
+  function selectLiveSide(side) {
+    setLiveSide(side);
+    setActiveSide(side);
+    saveActiveSide(side);
+    setLivePhase("trade");
+    setLiveTradeIndex(0);
+    setLiveAttempt(livePhase === "retry" ? 2 : liveAttempt);
+  }
+
+  function nextLiveStep() {
+    if (livePhase === "setup") {
+      if (liveSetupIndex < liveSetupSteps.length - 1) {
+        setLiveSetupIndex((currentIndex) => currentIndex + 1);
+        return;
+      }
+
+      setLivePhase("choice");
+      return;
     }
+
+    if (livePhase !== "trade" || !liveSide) {
+      return;
+    }
+
+    const currentStep = tradeFlowSteps[liveSide][liveTradeIndex];
+
+    if (currentStep.type === "cleanup") {
+      completeLiveFlow();
+      return;
+    }
+
+    setLiveTradeIndex((currentIndex) => currentIndex + 1);
+  }
+
+  function goLiveBack() {
+    if (livePhase === "setup") {
+      if (liveSetupIndex === 0) {
+        goHome();
+        return;
+      }
+
+      setLiveSetupIndex((currentIndex) => currentIndex - 1);
+      return;
+    }
+
+    if (livePhase === "choice") {
+      setLivePhase("setup");
+      setLiveSetupIndex(liveSetupSteps.length - 1);
+      return;
+    }
+
+    if (livePhase === "retry") {
+      if (liveSide) {
+        setLivePhase("trade");
+        setLiveTradeIndex(getManagementStepIndex(liveSide));
+      } else {
+        setLivePhase("choice");
+      }
+
+      return;
+    }
+
+    if (livePhase === "trade") {
+      if (liveTradeIndex === 0) {
+        setLivePhase(liveAttempt === 1 ? "choice" : "retry");
+        return;
+      }
+
+      setLiveTradeIndex((currentIndex) => currentIndex - 1);
+    }
+  }
+
+  function completeLiveFlow() {
+    const nextLockUntil = Date.now() + LOCK_DURATION_MS;
+    saveLiveLockUntil(nextLockUntil);
+    setLiveLockUntil(nextLockUntil);
+    setNow(Date.now());
+    setHomeNotice(
+      "Live Trading Session is locked for 5 minutes. Use the active trade calculator if needed.",
+    );
+
+    resetLiveState();
+    setMainSection(SECTIONS.HOME);
+  }
+
+  function handleTradeClosed(result) {
+    if (result === "sl" && liveAttempt === 1) {
+      setLivePhase("retry");
+      return;
+    }
+
+    setLiveTradeIndex(getCleanupStepIndex(liveSide));
+  }
+
+  function renderLiveStep() {
+    if (livePhase === "setup") {
+      const step = liveSetupSteps[liveSetupIndex];
+      const progress = `Step ${liveSetupIndex + 1} of ${
+        liveSetupSteps.length + 1
+      }`;
+
+      return (
+        <StepCard
+          label="LIVE TRADING SESSION"
+          progress={progress}
+          title={step.title}
+          imageKey={step.imageKey}
+          actions={[
+            {
+              label: "Next",
+              onClick: nextLiveStep,
+            },
+          ]}
+        />
+      );
+    }
+
+    if (livePhase === "choice") {
+      return (
+        <StepCard
+          label="LIVE TRADING SESSION"
+          progress={`Step ${liveSetupSteps.length + 1} of ${
+            liveSetupSteps.length + 1
+          }`}
+          title={liveSideChoiceStep.title}
+          support={liveSideChoiceStep.support}
+          imageKey={liveSideChoiceStep.imageKey}
+          actions={[
+            {
+              label: "Buy",
+              onClick: () => selectLiveSide(TRADE_SIDES.BUY),
+              variant: "accent",
+            },
+            {
+              label: "Sell",
+              onClick: () => selectLiveSide(TRADE_SIDES.SELL),
+              variant: "secondary",
+            },
+          ]}
+        />
+      );
+    }
+
+    if (livePhase === "retry") {
+      return (
+        <StepCard
+          label="SL RETRY"
+          progress="Last try"
+          title={retryChoiceStep.title}
+          support={retryChoiceStep.support}
+          imageKey={retryChoiceStep.imageKey}
+          actions={[
+            {
+              label: "Buy",
+              onClick: () => selectLiveSide(TRADE_SIDES.BUY),
+              variant: "accent",
+            },
+            {
+              label: "Sell",
+              onClick: () => selectLiveSide(TRADE_SIDES.SELL),
+              variant: "secondary",
+            },
+          ]}
+        />
+      );
+    }
+
+    if (!liveSide) {
+      return null;
+    }
+
+    const steps = tradeFlowSteps[liveSide];
+    const step = steps[liveTradeIndex];
+    const sideLabel = SIDE_LABELS[liveSide];
+    const progress = `Try ${liveAttempt} of 2 - ${sideLabel} ${
+      liveTradeIndex + 1
+    } of ${steps.length}`;
+    const lastTryWarning =
+      liveAttempt === 2
+        ? "Last try - after this, session will lock for 5 minutes."
+        : "";
+
+    if (step.type === "target") {
+      return (
+        <StepCard
+          label={`${sideLabel.toUpperCase()} FLOW`}
+          progress={progress}
+          title={step.title}
+          support={lastTryWarning}
+          imageKey={step.imageKey}
+          tone={liveSide}
+          actions={[
+            {
+              label: `Open ${sideLabel} Calculator / Set Target`,
+              onClick: () =>
+                openCalculator(liveSide, CALCULATOR_RETURN.LIVE_MANAGEMENT),
+              variant: "accent",
+            },
+            {
+              label: "Continue",
+              onClick: nextLiveStep,
+              variant: "ghost",
+            },
+          ]}
+        />
+      );
+    }
+
+    if (step.type === "management") {
+      return (
+        <StepCard
+          label={`${sideLabel.toUpperCase()} FLOW`}
+          progress={progress}
+          title={step.title}
+          support={lastTryWarning}
+          imageKey={step.imageKey}
+          tone={liveSide}
+          actions={[
+            {
+              label: "SL?",
+              onClick: () => handleTradeClosed("sl"),
+              variant: "danger",
+            },
+            {
+              label: "Target?",
+              onClick: () => handleTradeClosed("target"),
+              variant: "accent",
+            },
+            {
+              label: `Open ${sideLabel} Calculator`,
+              onClick: () =>
+                openCalculator(liveSide, CALCULATOR_RETURN.LIVE_MANAGEMENT),
+              variant: "ghost",
+            },
+          ]}
+        />
+      );
+    }
+
+    return (
+      <StepCard
+        label={`${sideLabel.toUpperCase()} FLOW`}
+        progress={progress}
+        title={step.title}
+        imageKey={step.imageKey}
+        tone={liveSide}
+        actions={[
+          {
+            label: step.type === "cleanup" ? "Complete Session" : "Next",
+            onClick: nextLiveStep,
+          },
+        ]}
+      />
+    );
   }
 
   return (
@@ -707,47 +729,36 @@ function App() {
       <div className="phone-frame">
         {mainSection === SECTIONS.HOME && (
           <HomePage
-            isCommittedActive={isCommittedActive}
-            countdown={committedCountdown}
-            onLive={startLiveFlow}
+            activeSide={activeSide}
+            buyCalculatorLocked={Boolean(buyCalculatorLockMessage)}
+            countdown={liveCountdown}
+            homeNotice={homeNotice}
+            isLiveLocked={isLiveLocked}
             onAfterSession={startAfterSessionFlow}
-            onAlerts={startAlertsFlow}
+            onBuyCalculator={() => openCalculator(TRADE_SIDES.BUY)}
+            onLive={startLiveFlow}
+            onSellCalculator={() => openCalculator(TRADE_SIDES.SELL)}
+            sellCalculatorLocked={Boolean(sellCalculatorLockMessage)}
+            tradingSessionOpen={tradingSessionOpen}
           />
         )}
 
         {mainSection === SECTIONS.LIVE && (
-          <LiveFlowShell
-            isCommittedActive={isCommittedActive}
-            countdown={committedCountdown}
-            showNav={
-              !activeFilterGuide && !isCommittedActive && !isTerminalLiveStep
-            }
+          <FlowShell
             onBack={goLiveBack}
             onHome={goHome}
+            statusText={
+              liveSide ? `Active side: ${SIDE_LABELS[liveSide]}` : "One step"
+            }
           >
-            {activeFilterGuide ? (
-              <FilterGuideFlow
-                type={activeFilterGuide}
-                steps={
-                  activeFilterGuide === "bullish"
-                    ? bullishFilterGuideSteps
-                    : bearishFilterGuideSteps
-                }
-                index={filterGuideIndex}
-                setIndex={setFilterGuideIndex}
-                onBackToScreener={closeFilterGuide}
-                onHome={goHome}
-              />
-            ) : (
-              renderLiveStep()
-            )}
-          </LiveFlowShell>
+            {renderLiveStep()}
+          </FlowShell>
         )}
 
         {mainSection === SECTIONS.AFTER_SESSION && (
           <LinearFlow
-            label="AFTER-SESSION"
-            steps={afterSessionSteps}
+            label="AFTER SESSION RITUAL"
+            steps={afterSessionFlowSteps}
             index={afterSessionIndex}
             setIndex={setAfterSessionIndex}
             finalButtonLabel="Back to Home"
@@ -755,13 +766,15 @@ function App() {
           />
         )}
 
-        {mainSection === SECTIONS.ALERTS && (
-          <LinearFlow
-            label="ALERT SETUP"
-            steps={alertsSteps}
-            index={alertsIndex}
-            setIndex={setAlertsIndex}
-            finalButtonLabel="Back to Home"
+        {mainSection === SECTIONS.CALCULATOR && (
+          <CalculatorPage
+            side={calculatorSide}
+            inputs={currentCalculatorInputs}
+            outputs={calculatorOutputs}
+            onChange={(field, value) =>
+              updateCalculatorInput(calculatorSide, field, value)
+            }
+            onDone={closeCalculator}
             onHome={goHome}
           />
         )}
@@ -770,55 +783,118 @@ function App() {
   );
 }
 
+function getCalculatorLockMessage(side, activeSide, tradingSessionOpen) {
+  if (!tradingSessionOpen || !activeSide || activeSide === side) {
+    return "";
+  }
+
+  return `${SIDE_LABELS[side]} Calculator is locked because your active session is ${SIDE_LABELS[activeSide]}.`;
+}
+
+function getManagementStepIndex(side) {
+  return tradeFlowSteps[side].findIndex((step) => step.type === "management");
+}
+
+function getCleanupStepIndex(side) {
+  return tradeFlowSteps[side].findIndex((step) => step.type === "cleanup");
+}
+
 function HomePage({
-  isCommittedActive,
+  activeSide,
+  buyCalculatorLocked,
   countdown,
-  onLive,
+  homeNotice,
+  isLiveLocked,
   onAfterSession,
-  onAlerts,
+  onBuyCalculator,
+  onLive,
+  onSellCalculator,
+  sellCalculatorLocked,
+  tradingSessionOpen,
 }) {
   return (
     <section className="home-screen" aria-label="Home">
       <div className="home-hero">
         <p className="app-kicker">Live Trading Discipline Assistant II</p>
-        <h1>Reminder: Fuck The Idea of Brokerage Donation.</h1>
-        <p>Calm sequence. Clean decisions. No impulse entries.</p>
+        <h1>Trade calm. Follow one clean step.</h1>
+        <p>
+          A focused mobile ritual for entries, exits, calculators, and review.
+        </p>
       </div>
+
+      <div className="status-strip" aria-live="polite">
+        <span>
+          {isLiveLocked
+            ? "Session locked"
+            : tradingSessionOpen
+              ? "Trading window active"
+              : "Free mode"}
+        </span>
+        <strong>
+          {activeSide
+            ? `Active side: ${SIDE_LABELS[activeSide]}`
+            : "No active side"}
+        </strong>
+      </div>
+
+      {(homeNotice || isLiveLocked) && (
+        <LockMessage
+          message={
+            homeNotice ||
+            "Live Trading Session is locked for 5 minutes. Use the active trade calculator if needed."
+          }
+          detail={isLiveLocked ? `Available again in ${countdown}` : ""}
+        />
+      )}
 
       <div className="home-actions" aria-label="Main sections">
         <HomeSectionButton
-          className={`trading-card ${
-            isCommittedActive ? "section-card-locked" : ""
-          }`}
-          title="Live Trading Session Steps"
+          className="trading-card"
           description={
-            isCommittedActive
-              ? `Available again in: ${countdown}`
-              : "Follow the live-session sequence."
+            isLiveLocked
+              ? `Locked now. Available again in ${countdown}.`
+              : "Begin the live Buy/Sell discipline sequence."
           }
-          marker="Live"
+          locked={isLiveLocked}
+          marker="01"
           onClick={onLive}
-          disabled={isCommittedActive}
+          title="Live Trading Session"
         />
 
         <HomeSectionButton
           className="after-card"
-          title="After-Session"
-          description="Prepare the next session cleanly."
-          marker="Review"
+          description="Run the exact after-session preparation ritual."
+          marker="02"
           onClick={onAfterSession}
+          title="After Session Ritual"
         />
 
         <HomeSectionButton
-          className="alerts-card"
-          title="TradingView Alerts Steps"
-          description="Set alerts without missing anything."
-          marker="Alerts"
-          onClick={onAlerts}
+          className="buy-card"
+          description={
+            buyCalculatorLocked
+              ? "Locked because your active session is Sell."
+              : "Calculate Buy targets, risk, and P&L."
+          }
+          locked={buyCalculatorLocked}
+          marker="03"
+          onClick={onBuyCalculator}
+          title="Buy Calculator"
+        />
+
+        <HomeSectionButton
+          className="sell-card"
+          description={
+            sellCalculatorLocked
+              ? "Locked because your active session is Buy."
+              : "Calculate Sell targets, risk, and P&L."
+          }
+          locked={sellCalculatorLocked}
+          marker="04"
+          onClick={onSellCalculator}
+          title="Sell Calculator"
         />
       </div>
-
-      {isCommittedActive && <LockedCommittedScreen countdown={countdown} />}
     </section>
   );
 }
@@ -829,14 +905,13 @@ function HomeSectionButton({
   description,
   marker,
   onClick,
-  disabled = false,
+  locked = false,
 }) {
   return (
     <button
-      className={`section-card ${className}`}
+      className={`section-card ${className} ${locked ? "is-locked" : ""}`}
       type="button"
       onClick={onClick}
-      disabled={disabled}
     >
       <span className="section-marker">{marker}</span>
       <span className="section-title">{title}</span>
@@ -845,110 +920,152 @@ function HomeSectionButton({
   );
 }
 
-function LockedCommittedScreen({ countdown }) {
-  return (
-    <section className="lock-panel" aria-live="polite">
-      <h2>Live trading flow committed.</h2>
-      <p>Available again in: {countdown}</p>
-    </section>
-  );
-}
-
-function LiveFlowShell({
-  isCommittedActive,
-  countdown,
-  showNav,
-  onBack,
-  onHome,
-  children,
-}) {
+function FlowShell({ children, onBack, onHome, statusText }) {
   return (
     <section className="flow-shell">
-      {showNav && (
-        <header className="flow-nav" aria-label="Live flow navigation">
-          <button className="nav-button" type="button" onClick={onBack}>
-            Back
-          </button>
-          <button className="nav-button" type="button" onClick={onHome}>
-            Home
-          </button>
-        </header>
-      )}
-
-      {isCommittedActive && (
-        <p className="commit-chip" aria-live="polite">
-          Committed flow active: {countdown}
-        </p>
-      )}
+      <header className="flow-nav" aria-label="Flow navigation">
+        <AppButton label="Back" onClick={onBack} variant="nav" />
+        <span>{statusText}</span>
+        <AppButton label="Home" onClick={onHome} variant="nav" />
+      </header>
 
       {children}
     </section>
   );
 }
 
-function StepScreen({
-  title,
-  support = "",
-  actionLabel = "Next",
-  tone = "default",
-  label = "LIVE SESSION",
-  progress = "",
-  onNext,
+function LinearFlow({
+  label,
+  steps,
+  index,
+  setIndex,
+  onHome,
+  finalButtonLabel,
 }) {
+  const step = steps[index];
+  const isFinal = Boolean(step.final);
+  const progress = `Step ${index + 1} of ${steps.length}`;
+
+  function goBack() {
+    if (index === 0) {
+      onHome();
+      return;
+    }
+
+    setIndex(index - 1);
+  }
+
   return (
-    <article className={`step-screen tone-${tone}`}>
-      <div className="step-card-content">
-        <ScreenHeader label={label} progress={progress} />
-        <h1 data-testid="screen-title">{title}</h1>
-        <SupportBlock support={support} />
-      </div>
-      <button className="primary-action" type="button" onClick={onNext}>
-        {actionLabel}
-      </button>
-    </article>
+    <section className="flow-shell">
+      <header className="flow-nav" aria-label="Flow navigation">
+        <AppButton label="Back" onClick={goBack} variant="nav" />
+        <span>Review ritual</span>
+        <AppButton label="Home" onClick={onHome} variant="nav" />
+      </header>
+
+      <StepCard
+        title={step.title}
+        support={step.support}
+        label={label}
+        progress={progress}
+        imageKey={step.imageKey}
+        actions={[
+          {
+            label: isFinal ? finalButtonLabel : "Next",
+            onClick: isFinal ? onHome : () => setIndex(index + 1),
+          },
+        ]}
+      />
+    </section>
   );
 }
 
-function DecisionScreen({
+function CalculatorPage({ side, inputs, outputs, onChange, onDone, onHome }) {
+  return (
+    <section className="flow-shell">
+      <header className="flow-nav" aria-label="Calculator navigation">
+        <AppButton label="Done" onClick={onDone} variant="nav" />
+        <span>{SIDE_LABELS[side]} Calculator</span>
+        <AppButton label="Home" onClick={onHome} variant="nav" />
+      </header>
+
+      <CalculatorCard
+        side={side}
+        inputs={inputs}
+        outputs={outputs}
+        onChange={onChange}
+        onDone={onDone}
+      />
+    </section>
+  );
+}
+
+function StepCard({
+  label,
+  progress = "",
   title,
   support = "",
-  options,
+  imageKey,
   tone = "default",
-  label = "LIVE SESSION",
-  progress = "",
+  actions,
 }) {
   return (
-    <article className={`step-screen decision-screen tone-${tone}`}>
-      <div className="step-card-content">
+    <article className={`step-card tone-${tone}`}>
+      <div className="step-card-body">
         <ScreenHeader label={label} progress={progress} />
-        <h1 data-testid="screen-title">{title}</h1>
-        <SupportBlock support={support} />
+        <StepImage imageKey={imageKey} title={title} />
+        <div className="step-copy">
+          <h1 data-testid="screen-title">{title}</h1>
+          <SupportBlock support={support} />
+        </div>
       </div>
-      <div className="decision-actions">
-        {options.map((option) => (
-          <div className="decision-option" key={option.label}>
-            <button
-              className={`primary-action action-${option.variant ?? "primary"}`}
-              type="button"
-              onClick={option.onClick}
-              disabled={option.disabled}
-            >
-              {option.label}
-            </button>
-            {option.helper && <small>{option.helper}</small>}
-          </div>
+
+      <div className="action-stack">
+        {actions.map((action) => (
+          <AppButton
+            key={action.label}
+            label={action.label}
+            onClick={action.onClick}
+            variant={action.variant}
+          />
         ))}
       </div>
     </article>
   );
 }
 
-function ScreenHeader({ label, progress = "" }) {
+function ScreenHeader({ label, progress }) {
   return (
     <div className="screen-header">
       <span className="screen-label">{label}</span>
       {progress && <span className="progress-pill">{progress}</span>}
     </div>
+  );
+}
+
+function StepImage({ imageKey, title }) {
+  const imageSrc = imageKey ? STEP_IMAGE_MAP[imageKey] : "";
+
+  if (imageSrc) {
+    return (
+      <figure className="step-image">
+        <img src={imageSrc} alt={`${title} reference`} />
+      </figure>
+    );
+  }
+
+  return (
+    <figure className="step-image step-image-placeholder">
+      <div className="placeholder-bars" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <figcaption>
+        <strong>Image slot</strong>
+        <span>{imageKey}</span>
+      </figcaption>
+    </figure>
   );
 }
 
@@ -975,81 +1092,80 @@ function SupportBlock({ support }) {
   return <p data-testid="screen-support">{support}</p>;
 }
 
-function CalculatorScreen({ direction, inputs, outputs, onChange, onNext }) {
-  const isShort = direction === TRADE_DIRECTIONS.SHORT;
+function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
   const pnlIsValid = Number.isFinite(outputs.checkPnl);
   const pnlIsProfit = pnlIsValid && outputs.checkPnl >= 0;
   const pnlLabel = pnlIsValid
-    ? `${pnlIsProfit ? "Profit" : "Loss"} ${formatMoney(outputs.checkPnl)}`
+    ? `${pnlIsProfit ? "Profit" : "Loss"} ${formatMoney(Math.abs(outputs.checkPnl))}`
     : "--";
 
   return (
-    <article className={`calculator-screen tone-${direction}`}>
-      <div className="calculator-copy">
-        <ScreenHeader label="CALCULATOR" />
-        <p className="calculator-mode">
-          Calculator Mode: {isShort ? "SELL / SHORT" : "BUY / LONG"}
+    <article className={`calculator-card tone-${side}`}>
+      <div className="calculator-intro">
+        <ScreenHeader label="CALCULATOR" progress={SIDE_LABELS[side]} />
+        <h1>{SIDE_LABELS[side]} Calculator</h1>
+        <p>
+          Enter price, quantity, target profit, and risk. The calculator keeps
+          the direction logic separate for Buy and Sell.
         </p>
-
-        <div className="input-grid">
-          <NumberInput
-            label="Entry Price"
-            value={inputs.entryPrice}
-            onChange={(value) => onChange("entryPrice", value)}
-          />
-          <NumberInput
-            label="Quantity"
-            value={inputs.quantity}
-            onChange={(value) => onChange("quantity", value)}
-          />
-          <NumberInput
-            label="Target 1 Profit Amount"
-            value={inputs.target1Profit}
-            onChange={(value) => onChange("target1Profit", value)}
-          />
-          <NumberInput
-            label="Target 2 Profit Amount"
-            value={inputs.target2Profit}
-            onChange={(value) => onChange("target2Profit", value)}
-          />
-          <NumberInput
-            label="Max Risk Amount"
-            value={inputs.maxRisk}
-            onChange={(value) => onChange("maxRisk", value)}
-          />
-          <NumberInput
-            label="Check price"
-            value={inputs.checkPrice}
-            onChange={(value) => onChange("checkPrice", value)}
-          />
-        </div>
-
-        <div className="output-grid" aria-live="polite">
-          <OutputCard
-            label="Target 1 Price"
-            value={formatMoney(outputs.target1Price)}
-          />
-          <OutputCard
-            label="Target 2 Price"
-            value={formatMoney(outputs.target2Price)}
-          />
-          <OutputCard
-            label="Stop Loss Price"
-            value={formatMoney(outputs.stopLossPrice)}
-            danger
-          />
-          <OutputCard
-            label="Estimated P&L at check price"
-            value={pnlLabel}
-            danger={pnlIsValid && !pnlIsProfit}
-            success={pnlIsValid && pnlIsProfit}
-          />
-        </div>
       </div>
 
-      <button className="primary-action" type="button" onClick={onNext}>
-        Next
-      </button>
+      <div className="input-grid">
+        <NumberInput
+          label="Entry Price"
+          value={inputs.entryPrice}
+          onChange={(value) => onChange("entryPrice", value)}
+        />
+        <NumberInput
+          label="Quantity"
+          value={inputs.quantity}
+          onChange={(value) => onChange("quantity", value)}
+        />
+        <NumberInput
+          label="Target 1 Profit Amount"
+          value={inputs.target1Profit}
+          onChange={(value) => onChange("target1Profit", value)}
+        />
+        <NumberInput
+          label="Target 2 Profit Amount"
+          value={inputs.target2Profit}
+          onChange={(value) => onChange("target2Profit", value)}
+        />
+        <NumberInput
+          label="Max Risk Amount"
+          value={inputs.maxRisk}
+          onChange={(value) => onChange("maxRisk", value)}
+        />
+        <NumberInput
+          label="Check Price"
+          value={inputs.checkPrice}
+          onChange={(value) => onChange("checkPrice", value)}
+        />
+      </div>
+
+      <div className="output-grid" aria-live="polite">
+        <OutputCard
+          label="Target 1 Price"
+          value={formatMoney(outputs.target1Price)}
+        />
+        <OutputCard
+          label="Target 2 Price"
+          value={formatMoney(outputs.target2Price)}
+        />
+        <OutputCard
+          danger
+          label="Stop Loss Price"
+          value={formatMoney(outputs.stopLossPrice)}
+        />
+        <OutputCard
+          danger={pnlIsValid && !pnlIsProfit}
+          label="Estimated P&L at Check Price"
+          success={pnlIsValid && pnlIsProfit}
+          value={pnlLabel}
+        />
+      </div>
+
+      <AppButton label="Done" onClick={onDone} variant="accent" />
     </article>
   );
 }
@@ -1081,109 +1197,19 @@ function OutputCard({ label, value, danger = false, success = false }) {
   );
 }
 
-function ResultScreen({ message, onHome }) {
+function AppButton({ label, onClick, variant = "accent" }) {
   return (
-    <article className="step-screen result-screen">
-      <div className="step-card-content">
-        <ScreenHeader label="SESSION RESULT" />
-        <h1 data-testid="screen-title">{message}</h1>
-      </div>
-      <button className="primary-action" type="button" onClick={onHome}>
-        Back to Home
-      </button>
-    </article>
+    <button className={`app-button button-${variant}`} type="button" onClick={onClick}>
+      {label}
+    </button>
   );
 }
 
-function LinearFlow({
-  label,
-  steps,
-  index,
-  setIndex,
-  onHome,
-  finalButtonLabel,
-}) {
-  const step = steps[index];
-  const isFinal = Boolean(step.final);
-  const progress = `Step ${index + 1} of ${steps.length}`;
-
-  function goBack() {
-    if (index === 0) {
-      onHome();
-      return;
-    }
-
-    setIndex(index - 1);
-  }
-
+function LockMessage({ message, detail = "" }) {
   return (
-    <section className="linear-shell">
-      <header className="flow-nav" aria-label="Flow navigation">
-        <button className="nav-button" type="button" onClick={goBack}>
-          Back
-        </button>
-        <button className="nav-button" type="button" onClick={onHome}>
-          Home
-        </button>
-      </header>
-
-      <StepScreen
-        title={step.title}
-        support={step.support}
-        label={label}
-        progress={progress}
-        actionLabel={isFinal ? finalButtonLabel : "Next"}
-        onNext={isFinal ? onHome : () => setIndex(index + 1)}
-      />
-    </section>
-  );
-}
-
-function FilterGuideFlow({
-  type,
-  steps,
-  index,
-  setIndex,
-  onBackToScreener,
-  onHome,
-}) {
-  const step = steps[index];
-  const isFinal = Boolean(step.final);
-  const screenerLabel =
-    type === "bullish" ? "Back to Bullish Screener" : "Back to Bearish Screener";
-  const label =
-    type === "bullish" ? "BULLISH FILTER GUIDE" : "BEARISH FILTER GUIDE";
-  const progress = `Step ${index + 1} of ${steps.length}`;
-
-  function goBack() {
-    if (index === 0) {
-      onBackToScreener();
-      return;
-    }
-
-    setIndex(index - 1);
-  }
-
-  return (
-    <section className="guide-shell">
-      <header className="flow-nav" aria-label="Filter guide navigation">
-        <button className="nav-button" type="button" onClick={goBack}>
-          Back
-        </button>
-        <button className="nav-button" type="button" onClick={onHome}>
-          Home
-        </button>
-      </header>
-
-      <StepScreen
-        title={step.title}
-        support={step.support}
-        label={label}
-        progress={progress}
-        tone={type === "bearish" ? "short" : "long"}
-        actionLabel={isFinal ? screenerLabel : "Next"}
-        onNext={isFinal ? onBackToScreener : () => setIndex(index + 1)}
-      />
+    <section className="lock-message" aria-live="polite">
+      <strong>{message}</strong>
+      {detail && <span>{detail}</span>}
     </section>
   );
 }
