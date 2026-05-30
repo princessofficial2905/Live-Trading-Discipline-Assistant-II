@@ -135,7 +135,7 @@ button:not(:disabled) {
 
 .home-hero h1 {
   max-width: 100%;
-  font-size: 1.86rem;
+  font-size: clamp(1.28rem, 6vw, 1.86rem);
   line-height: 1.08;
 }
 
@@ -146,6 +146,7 @@ button:not(:disabled) {
 
 .home-title-card h1 {
   text-align: center;
+  white-space: nowrap;
 }
 
 .home-hero p:not(.app-kicker),
@@ -731,7 +732,7 @@ button:not(:disabled) {
   }
 
   .home-hero h1 {
-    font-size: 1.56rem;
+    font-size: 1.24rem;
   }
 
   .step-copy h1,
