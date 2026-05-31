@@ -638,6 +638,7 @@ function App() {
             {
               label: "Sell",
               onClick: () => selectLiveSide(TRADE_SIDES.SELL),
+              reminder: "Only when : Strong High --> Weak",
               variant: "danger",
             },
           ]}
