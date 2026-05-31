@@ -160,7 +160,10 @@ const afterSessionSteps = [
   { title: "Parameter B :\n\nNo red barriers except the week-low tiny line" },
   { title: "Delete all remaining symbols from the watchlist" },
   { title: "List down the final symbols from the watchlist" },
-  { title: "Add all of them to your Zerodha watchlist" },
+  {
+    title: "Add all of them to your Zerodha watchlist\n\nRemove those who have",
+    candleReminder: true,
+  },
   { title: "List down their LTPs" },
   { title: "Calculate quantity for each of them" },
   {
@@ -604,7 +607,7 @@ function App() {
             {
               label: "Sell",
               onClick: () => selectLiveSide(TRADE_SIDES.SELL),
-              reminder: "Strong High --> Weak",
+              reminder: "Only when : Strong High --> Weak",
               variant: "danger",
             },
           ]}
@@ -969,6 +972,7 @@ function LinearFlow({
         label={label}
         progress={progress}
         imageKey={step.imageKey}
+        candleReminder={step.candleReminder}
         actions={[
           {
             label: isFinal ? finalButtonLabel : "Next",
@@ -1006,6 +1010,7 @@ function StepCard({
   title,
   support = "",
   imageKey,
+  candleReminder = false,
   tone = "default",
   actions,
 }) {
@@ -1017,6 +1022,7 @@ function StepCard({
         <StepImage imageKey={imageKey} title={title} />
         <div className="step-copy">
           <h1 data-testid="screen-title">{title}</h1>
+          {candleReminder && <CandleReminder />}
           <SupportBlock support={support} />
         </div>
       </div>
@@ -1069,6 +1075,24 @@ function StepImage({ imageKey, title }) {
         <span>{imageKey}</span>
       </figcaption>
     </figure>
+  );
+}
+
+function CandleReminder() {
+  return (
+    <div className="candle-reminder" data-testid="candle-reminder">
+      <div className="candle-reminder-lines">
+        <span>Zero volume</span>
+        <span className="candle-reminder-plus">+</span>
+        <span>Bar Like</span>
+        <span className="candle-reminder-plus">+</span>
+        <span>Stretched</span>
+      </div>
+      <span className="candle-reminder-brace" aria-hidden="true">
+        {"}"}
+      </span>
+      <strong>Candles</strong>
+    </div>
   );
 }
 
