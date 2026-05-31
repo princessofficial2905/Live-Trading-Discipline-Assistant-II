@@ -13,10 +13,10 @@ Live Trading Discipline Assistant II is a mobile-first React + Vite web app for 
 
 The live trading flow starts with Trading View, a 2-minute timeframe check, watchlist scrolling, and a Buy/Sell choice. After a trade reaches `Trade closed?`:
 
-- `Target?` ends the session, shows `Remove any active ATO / Alerts`, then locks Live Trading Session for 5 minutes.
+- `Target?` ends the session, shows `Remove any active ATO / Alerts`, then locks Live Trading Session for 1 hour.
 - First-round `SL?` opens one last retry page: `Any fresh buy/sell alert?`
 - The retry page can start one more Buy or Sell cycle.
-- On the second cycle, either `SL?` or `Target?` ends at `Remove any active ATO / Alerts`, then locks Live Trading Session for 5 minutes.
+- On the second cycle, either `SL?` or `Target?` ends at `Remove any active ATO / Alerts`, then locks Live Trading Session for 1 hour.
 
 During the lock, the home screen blocks a fresh Live Trading Session and shows a friendly countdown message. If the app reloads during the lock, the lock survives through `localStorage`.
 

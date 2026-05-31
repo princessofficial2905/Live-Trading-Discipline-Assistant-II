@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 const LIVE_LOCK_STORAGE_KEY = "liveTradingSessionLockedUntil";
 const LEGACY_LOCK_STORAGE_KEY = "liveTradingCommittedUntil";
 const ACTIVE_SIDE_STORAGE_KEY = "liveTradingActiveSide";
-const LOCK_DURATION_MS = 5 * 60 * 1000;
+const LOCK_DURATION_MS = 60 * 60 * 1000;
+const LOCK_DURATION_LABEL = "1 hour";
 const TRADING_SESSION_START_MINUTES = 9 * 60;
 const TRADING_SESSION_END_MINUTES = 15 * 60;
 
@@ -258,8 +259,13 @@ function saveActiveSide(side) {
 
 function formatCountdown(milliseconds) {
   const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
   const seconds = String(totalSeconds % 60).padStart(2, "0");
+
+  if (hours > 0) {
+    return `${hours}:${minutes}:${seconds}`;
+  }
 
   return `${minutes}:${seconds}`;
 }
@@ -411,7 +417,7 @@ function App() {
   function startLiveFlow() {
     if (isLiveLocked) {
       setHomeNotice(
-        "Live Trading Session is locked for 5 minutes. Use the active trade calculator if needed.",
+        `Live Trading Session is locked for ${LOCK_DURATION_LABEL}. Use the active trade calculator if needed.`,
       );
       return;
     }
@@ -549,7 +555,7 @@ function App() {
     setLiveLockUntil(nextLockUntil);
     setNow(Date.now());
     setHomeNotice(
-      "Live Trading Session is locked for 5 minutes. Use the active trade calculator if needed.",
+      `Live Trading Session is locked for ${LOCK_DURATION_LABEL}. Use the active trade calculator if needed.`,
     );
 
     resetLiveState();
@@ -651,7 +657,7 @@ function App() {
     } of ${steps.length}`;
     const lastTryWarning =
       liveAttempt === 2
-        ? "Last try - after this, session will lock for 5 minutes."
+        ? `Last try - after this, session will lock for ${LOCK_DURATION_LABEL}.`
         : "";
 
     if (step.type === "target") {
@@ -843,7 +849,7 @@ function HomePage({
         <LockMessage
           message={
             homeNotice ||
-            "Live Trading Session is locked for 5 minutes. Use the active trade calculator if needed."
+            `Live Trading Session is locked for ${LOCK_DURATION_LABEL}. Use the active trade calculator if needed.`
           }
           detail={isLiveLocked ? `Available again in ${countdown}` : ""}
         />
