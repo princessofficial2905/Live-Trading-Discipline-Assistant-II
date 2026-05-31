@@ -604,6 +604,7 @@ function App() {
             {
               label: "Sell",
               onClick: () => selectLiveSide(TRADE_SIDES.SELL),
+              reminder: "Strong High --> Weak",
               variant: "danger",
             },
           ]}
@@ -1026,6 +1027,7 @@ function StepCard({
             key={action.label}
             label={action.label}
             onClick={action.onClick}
+            reminder={action.reminder}
             variant={action.variant}
           />
         ))}
@@ -1199,10 +1201,15 @@ function OutputCard({ label, value, danger = false, success = false }) {
   );
 }
 
-function AppButton({ label, onClick, variant = "accent" }) {
+function AppButton({ label, onClick, reminder = "", variant = "accent" }) {
   return (
-    <button className={`app-button button-${variant}`} type="button" onClick={onClick}>
-      {label}
+    <button
+      className={`app-button button-${variant} ${reminder ? "has-reminder" : ""}`}
+      type="button"
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      {reminder && <small className="button-reminder">{reminder}</small>}
     </button>
   );
 }

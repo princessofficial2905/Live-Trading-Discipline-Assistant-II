@@ -596,6 +596,31 @@ button:not(:disabled) {
     opacity 170ms ease;
 }
 
+.app-button.has-reminder {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.button-reminder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #7b1021;
+  padding: 4px 11px;
+  font-size: 0.72rem;
+  font-weight: 1000;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(89, 0, 20, 0.18);
+}
+
 .button-accent {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 100%),
