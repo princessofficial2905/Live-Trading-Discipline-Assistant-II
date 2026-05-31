@@ -54,7 +54,7 @@ const STEP_IMAGE_MAP = {
   "buy-06": `${import.meta.env.BASE_URL}step-images/buy-06.png`,
   "sell-01": "",
   "sell-02": "",
-  "sell-03": `${import.meta.env.BASE_URL}step-images/sell-03.png?v=20260531`,
+  "sell-03": `${import.meta.env.BASE_URL}step-images/sell-03.png?v=20260531-2`,
   "sell-04": "",
   "sell-05": "",
   "sell-06": `${import.meta.env.BASE_URL}step-images/sell-06.png`,
