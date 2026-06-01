@@ -8,6 +8,9 @@ const LOCK_DURATION_LABEL = "1 hour";
 const TRADING_SESSION_START_MINUTES = 9 * 60;
 const TRADING_SESSION_END_MINUTES = 15 * 60;
 const INTRADAY_LEVERAGE_MULTIPLIER = 5;
+const TARGET_PROFIT_PER_1000_MARGIN = 100;
+const OPTIONAL_TARGET_PROFIT_PER_1000_MARGIN = 50;
+const MAX_RISK_PER_1000_MARGIN = 50;
 
 const SECTIONS = {
   HOME: "home",
@@ -332,9 +335,9 @@ function getCalculatorOutputs(inputs, side) {
   const positionValue = entryPrice * quantity;
   const marginValue = positionValue / INTRADAY_LEVERAGE_MULTIPLIER;
   const scale = marginValue / 1000;
-  const maxRiskAmount = 250 * scale;
-  const target1ProfitAmount = 500 * scale;
-  const target2ProfitAmount = 250 * scale;
+  const maxRiskAmount = MAX_RISK_PER_1000_MARGIN * scale;
+  const target1ProfitAmount = TARGET_PROFIT_PER_1000_MARGIN * scale;
+  const target2ProfitAmount = OPTIONAL_TARGET_PROFIT_PER_1000_MARGIN * scale;
   const isSell = side === TRADE_SIDES.SELL;
   const directionMultiplier = isSell ? -1 : 1;
   const checkPnl = Number.isFinite(checkPrice)
