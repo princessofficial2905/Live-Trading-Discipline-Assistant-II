@@ -833,6 +833,13 @@ button:not(:disabled) {
   overflow-wrap: anywhere;
 }
 
+.money-plan-item small {
+  color: var(--soft);
+  font-size: 0.73rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
 .output-card {
   min-height: 72px;
   display: grid;

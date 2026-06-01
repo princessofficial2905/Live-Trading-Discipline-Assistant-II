@@ -1180,17 +1180,19 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
 
       <section className="money-plan-card" aria-live="polite">
         <div className="money-plan-heading">
-          <span>Auto money plan</span>
-          <strong>Based on Entry x Quantity</strong>
+          <span>Auto price plan</span>
+          <strong>Prices scale from Entry x Quantity</strong>
         </div>
         <div className="money-plan-grid">
           <MoneyPlanItem
-            label="Max Risk"
-            value={formatRupees(outputs.maxRiskAmount)}
+            label="Target"
+            note={`Profit: ${formatRupees(outputs.target1ProfitAmount)}`}
+            value={formatRupees(outputs.target1Price)}
           />
           <MoneyPlanItem
-            label="Target"
-            value={formatRupees(outputs.target1ProfitAmount)}
+            label="Stop Loss"
+            note={`Risk: ${formatRupees(outputs.maxRiskAmount)}`}
+            value={formatRupees(outputs.stopLossPrice)}
           />
         </div>
       </section>
@@ -1231,7 +1233,7 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
   );
 }
 
-function MoneyPlanItem({ label, value, badge = "" }) {
+function MoneyPlanItem({ label, value, badge = "", note = "" }) {
   return (
     <div className="money-plan-item">
       <span>
@@ -1239,6 +1241,7 @@ function MoneyPlanItem({ label, value, badge = "" }) {
         {badge && <em>{badge}</em>}
       </span>
       <strong>{value}</strong>
+      {note && <small>{note}</small>}
     </div>
   );
 }
