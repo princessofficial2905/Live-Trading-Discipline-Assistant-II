@@ -33,9 +33,6 @@ const CALCULATOR_RETURN = {
 const initialCalculatorInputs = {
   entryPrice: "",
   quantity: "",
-  target1Profit: "50",
-  target2Profit: "100",
-  maxRisk: "50",
   checkPrice: "",
 };
 
@@ -300,30 +297,41 @@ function formatMoney(value) {
   });
 }
 
+function formatRupees(value) {
+  const amount = formatMoney(value);
+
+  return amount === "--" ? amount : `Rs. ${amount}`;
+}
+
 function getCalculatorOutputs(inputs, side) {
   const entryPrice = parseNumber(inputs.entryPrice);
   const quantity = parseNumber(inputs.quantity);
-  const target1Profit = parseNumber(inputs.target1Profit);
-  const target2Profit = parseNumber(inputs.target2Profit);
-  const maxRisk = parseNumber(inputs.maxRisk);
   const checkPrice = parseNumber(inputs.checkPrice);
+  const emptyOutputs = {
+    positionValue: Number.NaN,
+    target1ProfitAmount: Number.NaN,
+    target2ProfitAmount: Number.NaN,
+    maxRiskAmount: Number.NaN,
+    target1Price: Number.NaN,
+    target2Price: Number.NaN,
+    stopLossPrice: Number.NaN,
+    checkPnl: Number.NaN,
+  };
 
   if (
     !Number.isFinite(entryPrice) ||
     !Number.isFinite(quantity) ||
-    !Number.isFinite(target1Profit) ||
-    !Number.isFinite(target2Profit) ||
-    !Number.isFinite(maxRisk) ||
+    entryPrice <= 0 ||
     quantity <= 0
   ) {
-    return {
-      target1Price: Number.NaN,
-      target2Price: Number.NaN,
-      stopLossPrice: Number.NaN,
-      checkPnl: Number.NaN,
-    };
+    return emptyOutputs;
   }
 
+  const positionValue = entryPrice * quantity;
+  const scale = positionValue / 1000;
+  const maxRiskAmount = 250 * scale;
+  const target1ProfitAmount = 500 * scale;
+  const target2ProfitAmount = 250 * scale;
   const isSell = side === TRADE_SIDES.SELL;
   const directionMultiplier = isSell ? -1 : 1;
   const checkPnl = Number.isFinite(checkPrice)
@@ -331,9 +339,16 @@ function getCalculatorOutputs(inputs, side) {
     : Number.NaN;
 
   return {
-    target1Price: entryPrice + directionMultiplier * (target1Profit / quantity),
-    target2Price: entryPrice + directionMultiplier * (target2Profit / quantity),
-    stopLossPrice: entryPrice - directionMultiplier * (maxRisk / quantity),
+    positionValue,
+    target1ProfitAmount,
+    target2ProfitAmount,
+    maxRiskAmount,
+    target1Price:
+      entryPrice + directionMultiplier * (target1ProfitAmount / quantity),
+    target2Price:
+      entryPrice + directionMultiplier * (target2ProfitAmount / quantity),
+    stopLossPrice:
+      entryPrice - directionMultiplier * (maxRiskAmount / quantity),
     checkPnl,
   };
 }
@@ -1130,7 +1145,7 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
   const pnlIsValid = Number.isFinite(outputs.checkPnl);
   const pnlIsProfit = pnlIsValid && outputs.checkPnl >= 0;
   const pnlLabel = pnlIsValid
-    ? `${pnlIsProfit ? "Profit" : "Loss"} ${formatMoney(Math.abs(outputs.checkPnl))}`
+    ? `${pnlIsProfit ? "Profit" : "Loss"} ${formatRupees(Math.abs(outputs.checkPnl))}`
     : "--";
 
   return (
@@ -1140,8 +1155,8 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
         <ScreenHeader label="CALCULATOR" progress={SIDE_LABELS[side]} />
         <h1>{SIDE_LABELS[side]} Calculator</h1>
         <p>
-          Enter price, quantity, target profit, and risk. The calculator keeps
-          the direction logic separate for Buy and Sell.
+          Enter price and quantity. The money plan auto-scales from position
+          value while Buy and Sell keep their own direction logic.
         </p>
       </div>
 
@@ -1157,40 +1172,51 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
           onChange={(value) => onChange("quantity", value)}
         />
         <NumberInput
-          label="Target 1 Profit Amount"
-          value={inputs.target1Profit}
-          onChange={(value) => onChange("target1Profit", value)}
-        />
-        <NumberInput
-          label="Target 2 Profit Amount"
-          value={inputs.target2Profit}
-          onChange={(value) => onChange("target2Profit", value)}
-        />
-        <NumberInput
-          label="Max Risk Amount"
-          value={inputs.maxRisk}
-          onChange={(value) => onChange("maxRisk", value)}
-        />
-        <NumberInput
           label="Check Price"
           value={inputs.checkPrice}
           onChange={(value) => onChange("checkPrice", value)}
         />
       </div>
 
+      <section className="money-plan-card" aria-live="polite">
+        <div className="money-plan-heading">
+          <span>Auto money plan</span>
+          <strong>Based on Entry x Quantity</strong>
+        </div>
+        <div className="money-plan-grid">
+          <MoneyPlanItem
+            label="Max Risk"
+            value={formatRupees(outputs.maxRiskAmount)}
+          />
+          <MoneyPlanItem
+            label="Target"
+            value={formatRupees(outputs.target1ProfitAmount)}
+          />
+        </div>
+      </section>
+
       <div className="output-grid" aria-live="polite">
         <OutputCard
+          highlight
           label="Target 1 Price"
-          value={formatMoney(outputs.target1Price)}
+          note={`Profit: ${formatRupees(outputs.target1ProfitAmount)}`}
+          tone={side}
+          value={formatRupees(outputs.target1Price)}
         />
         <OutputCard
-          label="Target 2 Price"
-          value={formatMoney(outputs.target2Price)}
-        />
-        <OutputCard
-          danger
+          highlight
           label="Stop Loss Price"
-          value={formatMoney(outputs.stopLossPrice)}
+          note={`Max Risk: ${formatRupees(outputs.maxRiskAmount)}`}
+          tone={side}
+          value={formatRupees(outputs.stopLossPrice)}
+        />
+        <OutputCard
+          badge="Optional"
+          label="Target 2 Price"
+          note={`Optional Profit: ${formatRupees(
+            outputs.target2ProfitAmount,
+          )}`}
+          value={formatRupees(outputs.target2Price)}
         />
         <OutputCard
           danger={pnlIsValid && !pnlIsProfit}
@@ -1202,6 +1228,18 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
 
       <AppButton label="Done" onClick={onDone} variant="accent" />
     </article>
+  );
+}
+
+function MoneyPlanItem({ label, value, badge = "" }) {
+  return (
+    <div className="money-plan-item">
+      <span>
+        {label}
+        {badge && <em>{badge}</em>}
+      </span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -1219,15 +1257,30 @@ function NumberInput({ label, value, onChange }) {
   );
 }
 
-function OutputCard({ label, value, danger = false, success = false }) {
+function OutputCard({
+  label,
+  value,
+  badge = "",
+  danger = false,
+  highlight = false,
+  note = "",
+  success = false,
+  tone = "",
+}) {
   return (
     <div
-      className={`output-card ${danger ? "output-danger" : ""} ${
+      className={`output-card ${highlight ? "is-highlighted" : ""} ${
+        highlight && tone ? `highlight-${tone}` : ""
+      } ${badge ? "has-badge" : ""} ${danger ? "output-danger" : ""} ${
         success ? "output-success" : ""
       }`}
     >
-      <span>{label}</span>
+      <div className="output-label-row">
+        <span>{label}</span>
+        {badge && <span className="optional-badge">{badge}</span>}
+      </div>
       <strong>{value}</strong>
+      {note && <small className="output-note">{note}</small>}
     </div>
   );
 }

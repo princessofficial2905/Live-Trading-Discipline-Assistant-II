@@ -616,6 +616,7 @@ button:not(:disabled) {
 }
 
 .calculator-card > .input-grid,
+.calculator-card > .money-plan-card,
 .calculator-card > .output-grid,
 .calculator-card > .app-button {
   position: relative;
@@ -751,10 +752,94 @@ button:not(:disabled) {
   box-shadow: 0 0 0 4px rgba(255, 197, 51, 0.12);
 }
 
+.money-plan-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(255, 197, 51, 0.09), transparent 76%),
+    rgba(255, 255, 255, 0.055);
+  padding: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.money-plan-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.money-plan-heading span {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.money-plan-heading strong {
+  color: var(--soft);
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.money-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.money-plan-item {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 16px;
+  background: rgba(2, 8, 20, 0.22);
+  padding: 10px;
+}
+
+.money-plan-item span {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.money-plan-item em {
+  border: 1px solid rgba(255, 197, 51, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 197, 51, 0.1);
+  color: #ffe59a;
+  padding: 2px 7px;
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.money-plan-item strong {
+  min-width: 0;
+  color: #fff6ce;
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
 .output-card {
   min-height: 72px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(96px, auto);
+  grid-template-areas:
+    "label value"
+    "note value";
   align-items: center;
   gap: 10px;
   border: 1px solid rgba(255, 197, 51, 0.2);
@@ -765,6 +850,15 @@ button:not(:disabled) {
   padding: 13px;
 }
 
+.output-label-row {
+  min-width: 0;
+  grid-area: label;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .output-card span {
   color: var(--muted);
   font-size: 0.84rem;
@@ -773,12 +867,56 @@ button:not(:disabled) {
 }
 
 .output-card strong {
+  grid-area: value;
   color: #fff6ce;
   font-size: 1.1rem;
   font-weight: 950;
   line-height: 1.1;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.output-card .output-note {
+  grid-area: note;
+  color: var(--soft);
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.output-card .optional-badge {
+  border: 1px solid rgba(255, 197, 51, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 197, 51, 0.1);
+  color: #ffe59a;
+  padding: 3px 8px;
+  font-size: 0.66rem;
+  font-weight: 950;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.output-card.has-badge {
+  border-color: rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 82%),
+    var(--panel-strong);
+}
+
+.output-card.is-highlighted {
+  border-width: 1px;
+}
+
+.output-card.highlight-buy {
+  border: 1px solid rgba(75, 217, 149, 0.38);
+  background: rgba(75, 217, 149, 0.14);
+  box-shadow: 0 14px 30px rgba(75, 217, 149, 0.08);
+}
+
+.output-card.highlight-sell {
+  border: 1px solid rgba(255, 90, 102, 0.38);
+  background: rgba(255, 90, 102, 0.14);
+  box-shadow: 0 14px 30px rgba(255, 90, 102, 0.08);
 }
 
 .output-success {
@@ -1105,10 +1243,18 @@ button:not(:disabled) {
 
   .output-card {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "label"
+      "value"
+      "note";
   }
 
   .output-card strong {
     text-align: left;
+  }
+
+  .money-plan-grid {
+    grid-template-columns: 1fr;
   }
 }
 
