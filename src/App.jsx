@@ -7,6 +7,7 @@ const LOCK_DURATION_MS = 60 * 60 * 1000;
 const LOCK_DURATION_LABEL = "1 hour";
 const TRADING_SESSION_START_MINUTES = 9 * 60;
 const TRADING_SESSION_END_MINUTES = 15 * 60;
+const INTRADAY_LEVERAGE_MULTIPLIER = 5;
 
 const SECTIONS = {
   HOME: "home",
@@ -309,6 +310,7 @@ function getCalculatorOutputs(inputs, side) {
   const checkPrice = parseNumber(inputs.checkPrice);
   const emptyOutputs = {
     positionValue: Number.NaN,
+    marginValue: Number.NaN,
     target1ProfitAmount: Number.NaN,
     target2ProfitAmount: Number.NaN,
     maxRiskAmount: Number.NaN,
@@ -328,7 +330,8 @@ function getCalculatorOutputs(inputs, side) {
   }
 
   const positionValue = entryPrice * quantity;
-  const scale = positionValue / 1000;
+  const marginValue = positionValue / INTRADAY_LEVERAGE_MULTIPLIER;
+  const scale = marginValue / 1000;
   const maxRiskAmount = 250 * scale;
   const target1ProfitAmount = 500 * scale;
   const target2ProfitAmount = 250 * scale;
@@ -340,6 +343,7 @@ function getCalculatorOutputs(inputs, side) {
 
   return {
     positionValue,
+    marginValue,
     target1ProfitAmount,
     target2ProfitAmount,
     maxRiskAmount,
@@ -1155,8 +1159,8 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
         <ScreenHeader label="CALCULATOR" progress={SIDE_LABELS[side]} />
         <h1>{SIDE_LABELS[side]} Calculator</h1>
         <p>
-          Enter price and quantity. The money plan auto-scales from position
-          value while Buy and Sell keep their own direction logic.
+          Enter price and quantity. The money plan auto-scales from 5x
+          intraday margin while Buy and Sell keep their own direction logic.
         </p>
       </div>
 
@@ -1181,7 +1185,7 @@ function CalculatorCard({ side, inputs, outputs, onChange, onDone }) {
       <section className="money-plan-card" aria-live="polite">
         <div className="money-plan-heading">
           <span>Auto price plan</span>
-          <strong>Prices scale from Entry x Quantity</strong>
+          <strong>Based on Entry x Quantity / 5x</strong>
         </div>
         <div className="money-plan-grid">
           <MoneyPlanItem
