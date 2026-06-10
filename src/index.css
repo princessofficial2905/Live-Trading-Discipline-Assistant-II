@@ -639,6 +639,7 @@ button:not(:disabled) {
 .calculator-card > .output-grid,
 .calculator-card > .form-error,
 .calculator-card > .ato-output-grid,
+.calculator-card > .r1-mode-toggle,
 .calculator-card > .app-button {
   position: relative;
   z-index: 1;
@@ -780,6 +781,50 @@ button:not(:disabled) {
   box-shadow: 0 0 0 4px rgba(255, 197, 51, 0.12);
 }
 
+.r1-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 6px;
+}
+
+.r1-mode-option {
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  color: var(--soft);
+  font-size: 0.96rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.1;
+  transition:
+    border-color 160ms ease,
+    filter 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.r1-mode-option.is-active.is-long {
+  border-color: rgba(75, 217, 149, 0.36);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 100%),
+    linear-gradient(135deg, var(--success), var(--success-deep));
+  color: #031c12;
+}
+
+.r1-mode-option.is-active.is-short {
+  border-color: rgba(255, 90, 102, 0.38);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.17), transparent 100%),
+    linear-gradient(135deg, var(--danger), var(--danger-deep));
+  color: #fff8f8;
+}
+
 .form-error {
   border: 1px solid rgba(255, 90, 102, 0.42);
   border-radius: 18px;
@@ -864,6 +909,14 @@ button:not(:disabled) {
   line-height: 1.12;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.ato-lines strong.profit-positive {
+  color: #d8ffeb;
+}
+
+.ato-lines strong.profit-negative {
+  color: #ffe0e3;
 }
 
 .money-plan-card {

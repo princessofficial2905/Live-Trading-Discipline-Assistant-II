@@ -12,6 +12,7 @@ const TARGET_PROFIT_PER_1000_MARGIN = 100;
 const OPTIONAL_TARGET_PROFIT_PER_1000_MARGIN = 50;
 const MAX_RISK_PER_1000_MARGIN = 50;
 const R1_CALCULATOR_LEVERAGE = 5;
+const R1_RISK_DIVISOR = 30;
 
 const SECTIONS = {
   HOME: "home",
@@ -26,9 +27,19 @@ const TRADE_SIDES = {
   SELL: "sell",
 };
 
+const R1_TRADE_MODES = {
+  LONG: "long",
+  SHORT: "short",
+};
+
 const SIDE_LABELS = {
   [TRADE_SIDES.BUY]: "Buy",
   [TRADE_SIDES.SELL]: "Sell",
+};
+
+const R1_TRADE_MODE_LABELS = {
+  [R1_TRADE_MODES.LONG]: "Long",
+  [R1_TRADE_MODES.SHORT]: "Short",
 };
 
 const CALCULATOR_RETURN = {
@@ -316,16 +327,20 @@ function formatRupees(value) {
 }
 
 function formatR1Currency(value) {
-  const amount = formatMoney(value);
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
 
-  return amount === "--" ? amount : `\u20b9${amount}`;
+  const amount = formatMoney(Math.abs(value));
+
+  return value < 0 ? `-\u20b9${amount}` : `\u20b9${amount}`;
 }
 
 function roundToTwo(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function getR1CalculatorResult(inputs) {
+function getR1CalculatorResult(inputs, tradeMode) {
   const hasEmptyField = Object.values(inputs).some(
     (value) => String(value).trim() === "",
   );
@@ -366,10 +381,15 @@ function getR1CalculatorResult(inputs) {
     };
   }
 
-  const maxRiskAmount = margin / 40;
+  const isShort = tradeMode === R1_TRADE_MODES.SHORT;
+  const maxRiskAmount = margin / R1_RISK_DIVISOR;
   const riskPerShare = maxRiskAmount / qty;
-  const slPrice = roundToTwo(entryPrice - riskPerShare);
-  const triggerPrice = roundToTwo(slPrice + 0.05);
+  const profitAmount =
+    (isShort ? entryPrice - targetPrice : targetPrice - entryPrice) * qty;
+  const slPrice = roundToTwo(
+    isShort ? entryPrice + riskPerShare : entryPrice - riskPerShare,
+  );
+  const triggerPrice = roundToTwo(isShort ? slPrice - 0.05 : slPrice + 0.05);
 
   return {
     error: "",
@@ -377,10 +397,12 @@ function getR1CalculatorResult(inputs) {
       buyingPower,
       entryPrice,
       maxRiskAmount,
+      profitAmount,
       qty,
       riskPerShare,
       slPrice,
       targetPrice,
+      tradeMode,
       triggerPrice,
     },
   };
@@ -1133,6 +1155,7 @@ function CalculatorPage({ side, inputs, outputs, onChange, onDone, onHome }) {
 
 function R1CalculatorPage({ onHome }) {
   const [inputs, setInputs] = useState(() => ({ ...initialR1CalculatorInputs }));
+  const [tradeMode, setTradeMode] = useState(R1_TRADE_MODES.LONG);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
@@ -1146,10 +1169,16 @@ function R1CalculatorPage({ onHome }) {
   }
 
   function calculate() {
-    const nextState = getR1CalculatorResult(inputs);
+    const nextState = getR1CalculatorResult(inputs, tradeMode);
 
     setError(nextState.error);
     setResult(nextState.result);
+  }
+
+  function updateTradeMode(nextTradeMode) {
+    setTradeMode(nextTradeMode);
+    setResult(null);
+    setError("");
   }
 
   return (
@@ -1163,9 +1192,33 @@ function R1CalculatorPage({ onHome }) {
       <article className="calculator-card r1-calculator-card">
         <DecorativeShapes variant="r1-calculator" />
         <div className="calculator-intro">
-          <ScreenHeader label="R1 CALCULATOR" progress="5x intraday" />
+          <ScreenHeader
+            label="R1 CALCULATOR"
+            progress={`${R1_TRADE_MODE_LABELS[tradeMode]} - 5x intraday`}
+          />
           <h1>R1 Calculator</h1>
-          <p>Entry ATO and Target ATO values from margin, entry, and target.</p>
+          <p>Entry ATO and Target ATO values for long or short setups.</p>
+        </div>
+
+        <div className="r1-mode-toggle" aria-label="R1 trade direction">
+          <button
+            className={`r1-mode-option is-long ${
+              tradeMode === R1_TRADE_MODES.LONG ? "is-active" : ""
+            }`}
+            type="button"
+            onClick={() => updateTradeMode(R1_TRADE_MODES.LONG)}
+          >
+            Long
+          </button>
+          <button
+            className={`r1-mode-option is-short ${
+              tradeMode === R1_TRADE_MODES.SHORT ? "is-active" : ""
+            }`}
+            type="button"
+            onClick={() => updateTradeMode(R1_TRADE_MODES.SHORT)}
+          >
+            Short
+          </button>
         </div>
 
         <div className="input-grid r1-input-grid">
@@ -1201,6 +1254,10 @@ function R1CalculatorPage({ onHome }) {
               <h2>Entry ATO</h2>
               <div className="ato-lines">
                 <p>
+                  <span>Side:</span>
+                  <strong>{R1_TRADE_MODE_LABELS[result.tradeMode]}</strong>
+                </p>
+                <p>
                   <span>Entry Value:</span>
                   <strong>{formatR1Currency(result.entryPrice)}</strong>
                 </p>
@@ -1232,6 +1289,18 @@ function R1CalculatorPage({ onHome }) {
                 <p>
                   <span>Qty:</span>
                   <strong>{result.qty}</strong>
+                </p>
+                <p>
+                  <span>Profit from R1 to R2:</span>
+                  <strong
+                    className={
+                      result.profitAmount < 0
+                        ? "profit-negative"
+                        : "profit-positive"
+                    }
+                  >
+                    {formatR1Currency(result.profitAmount)}
+                  </strong>
                 </p>
               </div>
             </section>
