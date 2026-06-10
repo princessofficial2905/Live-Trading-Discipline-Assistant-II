@@ -13,6 +13,7 @@ const OPTIONAL_TARGET_PROFIT_PER_1000_MARGIN = 50;
 const MAX_RISK_PER_1000_MARGIN = 50;
 const R1_CALCULATOR_LEVERAGE = 5;
 const R1_RISK_DIVISOR = 30;
+const R1_TARGET_PROFIT_DIVISOR = 10;
 
 const SECTIONS = {
   HOME: "home",
@@ -56,7 +57,6 @@ const initialCalculatorInputs = {
 const initialR1CalculatorInputs = {
   margin: "",
   entryPrice: "",
-  targetPrice: "",
 };
 
 // Add ordered step images here later. Values can be public paths such as
@@ -340,6 +340,14 @@ function roundToTwo(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+function ceilToTwo(value) {
+  return Math.ceil((value - Number.EPSILON) * 100) / 100;
+}
+
+function floorToTwo(value) {
+  return Math.floor((value + Number.EPSILON) * 100) / 100;
+}
+
 function getR1CalculatorResult(inputs, tradeMode) {
   const hasEmptyField = Object.values(inputs).some(
     (value) => String(value).trim() === "",
@@ -354,15 +362,12 @@ function getR1CalculatorResult(inputs, tradeMode) {
 
   const margin = parseNumber(inputs.margin);
   const entryPrice = parseNumber(inputs.entryPrice);
-  const targetPrice = parseNumber(inputs.targetPrice);
 
   if (
     !Number.isFinite(margin) ||
     !Number.isFinite(entryPrice) ||
-    !Number.isFinite(targetPrice) ||
     margin <= 0 ||
-    entryPrice <= 0 ||
-    targetPrice <= 0
+    entryPrice <= 0
   ) {
     return {
       error: "Please enter valid positive numbers.",
@@ -384,8 +389,11 @@ function getR1CalculatorResult(inputs, tradeMode) {
   const isShort = tradeMode === R1_TRADE_MODES.SHORT;
   const maxRiskAmount = margin / R1_RISK_DIVISOR;
   const riskPerShare = maxRiskAmount / qty;
-  const profitAmount =
-    (isShort ? entryPrice - targetPrice : targetPrice - entryPrice) * qty;
+  const profitAmount = margin / R1_TARGET_PROFIT_DIVISOR;
+  const targetMovePerShare = profitAmount / qty;
+  const targetPrice = isShort
+    ? floorToTwo(entryPrice - targetMovePerShare)
+    : ceilToTwo(entryPrice + targetMovePerShare);
   const slPrice = roundToTwo(
     isShort ? entryPrice + riskPerShare : entryPrice - riskPerShare,
   );
@@ -402,6 +410,7 @@ function getR1CalculatorResult(inputs, tradeMode) {
       riskPerShare,
       slPrice,
       targetPrice,
+      targetMovePerShare,
       tradeMode,
       triggerPrice,
     },
@@ -1040,7 +1049,7 @@ function HomePage({
 
         <HomeSectionButton
           className="r1-card"
-          description="Calculate Entry ATO, SL trigger, and Target ATO."
+          description="Calculate Entry ATO, SL trigger, and margin/10 target."
           marker="05"
           onClick={onR1Calculator}
           title="R1 Calculator"
@@ -1197,7 +1206,9 @@ function R1CalculatorPage({ onHome }) {
             progress={`${R1_TRADE_MODE_LABELS[tradeMode]} - 5x intraday`}
           />
           <h1>R1 Calculator</h1>
-          <p>Entry ATO and Target ATO values for long or short setups.</p>
+          <p>
+            Enter margin and entry. Target is auto-calculated from margin / 10.
+          </p>
         </div>
 
         <div className="r1-mode-toggle" aria-label="R1 trade direction">
@@ -1229,14 +1240,9 @@ function R1CalculatorPage({ onHome }) {
             onChange={(value) => updateInput("margin", value)}
           />
           <NumberInput
-            label="R1/R2 Value"
+            label="R1 Entry Value"
             value={inputs.entryPrice}
             onChange={(value) => updateInput("entryPrice", value)}
-          />
-          <NumberInput
-            label="R2/R3 Value"
-            value={inputs.targetPrice}
-            onChange={(value) => updateInput("targetPrice", value)}
           />
         </div>
 
@@ -1291,7 +1297,7 @@ function R1CalculatorPage({ onHome }) {
                   <strong>{result.qty}</strong>
                 </p>
                 <p>
-                  <span>Profit from R1 to R2:</span>
+                  <span>Target Profit (margin / 10):</span>
                   <strong
                     className={
                       result.profitAmount < 0
