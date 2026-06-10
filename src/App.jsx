@@ -11,12 +11,14 @@ const INTRADAY_LEVERAGE_MULTIPLIER = 5;
 const TARGET_PROFIT_PER_1000_MARGIN = 100;
 const OPTIONAL_TARGET_PROFIT_PER_1000_MARGIN = 50;
 const MAX_RISK_PER_1000_MARGIN = 50;
+const R1_CALCULATOR_LEVERAGE = 5;
 
 const SECTIONS = {
   HOME: "home",
   LIVE: "live",
   AFTER_SESSION: "afterSession",
   CALCULATOR: "calculator",
+  R1_CALCULATOR: "r1Calculator",
 };
 
 const TRADE_SIDES = {
@@ -38,6 +40,12 @@ const initialCalculatorInputs = {
   entryPrice: "",
   quantity: "",
   checkPrice: "",
+};
+
+const initialR1CalculatorInputs = {
+  margin: "",
+  entryPrice: "",
+  targetPrice: "",
 };
 
 // Add ordered step images here later. Values can be public paths such as
@@ -307,6 +315,77 @@ function formatRupees(value) {
   return amount === "--" ? amount : `Rs. ${amount}`;
 }
 
+function formatR1Currency(value) {
+  const amount = formatMoney(value);
+
+  return amount === "--" ? amount : `\u20b9${amount}`;
+}
+
+function roundToTwo(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function getR1CalculatorResult(inputs) {
+  const hasEmptyField = Object.values(inputs).some(
+    (value) => String(value).trim() === "",
+  );
+
+  if (hasEmptyField) {
+    return {
+      error: "Please fill all fields.",
+      result: null,
+    };
+  }
+
+  const margin = parseNumber(inputs.margin);
+  const entryPrice = parseNumber(inputs.entryPrice);
+  const targetPrice = parseNumber(inputs.targetPrice);
+
+  if (
+    !Number.isFinite(margin) ||
+    !Number.isFinite(entryPrice) ||
+    !Number.isFinite(targetPrice) ||
+    margin <= 0 ||
+    entryPrice <= 0 ||
+    targetPrice <= 0
+  ) {
+    return {
+      error: "Please enter valid positive numbers.",
+      result: null,
+    };
+  }
+
+  const buyingPower = margin * R1_CALCULATOR_LEVERAGE;
+  const qty = Math.floor(buyingPower / entryPrice);
+
+  if (qty <= 0) {
+    return {
+      error:
+        "Margin is too low for this entry value. Increase margin or choose lower entry price.",
+      result: null,
+    };
+  }
+
+  const maxRiskAmount = margin / 40;
+  const riskPerShare = maxRiskAmount / qty;
+  const slPrice = roundToTwo(entryPrice - riskPerShare);
+  const triggerPrice = roundToTwo(slPrice + 0.05);
+
+  return {
+    error: "",
+    result: {
+      buyingPower,
+      entryPrice,
+      maxRiskAmount,
+      qty,
+      riskPerShare,
+      slPrice,
+      targetPrice,
+      triggerPrice,
+    },
+  };
+}
+
 function getCalculatorOutputs(inputs, side) {
   const entryPrice = parseNumber(inputs.entryPrice);
   const quantity = parseNumber(inputs.quantity);
@@ -453,6 +532,11 @@ function App() {
     setAfterSessionIndex(0);
     setHomeNotice("");
     setMainSection(SECTIONS.AFTER_SESSION);
+  }
+
+  function startR1Calculator() {
+    setHomeNotice("");
+    setMainSection(SECTIONS.R1_CALCULATOR);
   }
 
   function getCalculatorLockMessageFor(side) {
@@ -771,6 +855,7 @@ function App() {
             onAfterSession={startAfterSessionFlow}
             onBuyCalculator={() => openCalculator(TRADE_SIDES.BUY)}
             onLive={startLiveFlow}
+            onR1Calculator={startR1Calculator}
             onSellCalculator={() => openCalculator(TRADE_SIDES.SELL)}
             sellCalculatorLocked={Boolean(sellCalculatorLockMessage)}
             tradingSessionOpen={tradingSessionOpen}
@@ -812,6 +897,10 @@ function App() {
             onHome={goHome}
           />
         )}
+
+        {mainSection === SECTIONS.R1_CALCULATOR && (
+          <R1CalculatorPage onHome={goHome} />
+        )}
       </div>
     </main>
   );
@@ -842,6 +931,7 @@ function HomePage({
   onAfterSession,
   onBuyCalculator,
   onLive,
+  onR1Calculator,
   onSellCalculator,
   sellCalculatorLocked,
   tradingSessionOpen,
@@ -924,6 +1014,14 @@ function HomePage({
           marker="04"
           onClick={onSellCalculator}
           title="Sell Calculator"
+        />
+
+        <HomeSectionButton
+          className="r1-card"
+          description="Calculate Entry ATO, SL trigger, and Target ATO."
+          marker="05"
+          onClick={onR1Calculator}
+          title="R1 Calculator"
         />
       </div>
     </section>
@@ -1029,6 +1127,117 @@ function CalculatorPage({ side, inputs, outputs, onChange, onDone, onHome }) {
         onChange={onChange}
         onDone={onDone}
       />
+    </section>
+  );
+}
+
+function R1CalculatorPage({ onHome }) {
+  const [inputs, setInputs] = useState(() => ({ ...initialR1CalculatorInputs }));
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+
+  function updateInput(field, value) {
+    setInputs((currentInputs) => ({
+      ...currentInputs,
+      [field]: value,
+    }));
+    setResult(null);
+    setError("");
+  }
+
+  function calculate() {
+    const nextState = getR1CalculatorResult(inputs);
+
+    setError(nextState.error);
+    setResult(nextState.result);
+  }
+
+  return (
+    <section className="flow-shell">
+      <header className="flow-nav" aria-label="R1 Calculator navigation">
+        <AppButton label="Done" onClick={onHome} variant="nav" />
+        <span>R1 Calculator</span>
+        <AppButton label="Home" onClick={onHome} variant="nav" />
+      </header>
+
+      <article className="calculator-card r1-calculator-card">
+        <DecorativeShapes variant="r1-calculator" />
+        <div className="calculator-intro">
+          <ScreenHeader label="R1 CALCULATOR" progress="5x intraday" />
+          <h1>R1 Calculator</h1>
+          <p>Entry ATO and Target ATO values from margin, entry, and target.</p>
+        </div>
+
+        <div className="input-grid r1-input-grid">
+          <NumberInput
+            helper="Enter margin before applying intraday 5x leverage"
+            label="Margin"
+            value={inputs.margin}
+            onChange={(value) => updateInput("margin", value)}
+          />
+          <NumberInput
+            label="R1/R2 Value"
+            value={inputs.entryPrice}
+            onChange={(value) => updateInput("entryPrice", value)}
+          />
+          <NumberInput
+            label="R2/R3 Value"
+            value={inputs.targetPrice}
+            onChange={(value) => updateInput("targetPrice", value)}
+          />
+        </div>
+
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <AppButton label="Calculate" onClick={calculate} variant="accent" />
+
+        {result && (
+          <div className="ato-output-grid" aria-live="polite">
+            <section className="ato-block">
+              <h2>Entry ATO</h2>
+              <div className="ato-lines">
+                <p>
+                  <span>Entry Value:</span>
+                  <strong>{formatR1Currency(result.entryPrice)}</strong>
+                </p>
+                <p>
+                  <span>Qty after 5x leverage:</span>
+                  <strong>{result.qty}</strong>
+                </p>
+              </div>
+              <div className="ato-sl-block">
+                <span>SL:</span>
+                <p>
+                  <span>Trigger Price:</span>
+                  <strong>{formatR1Currency(result.triggerPrice)}</strong>
+                </p>
+                <p>
+                  <span>Price:</span>
+                  <strong>{formatR1Currency(result.slPrice)}</strong>
+                </p>
+              </div>
+            </section>
+
+            <section className="ato-block target-ato-block">
+              <h2>Target ATO</h2>
+              <div className="ato-lines">
+                <p>
+                  <span>Target Value:</span>
+                  <strong>{formatR1Currency(result.targetPrice)}</strong>
+                </p>
+                <p>
+                  <span>Qty:</span>
+                  <strong>{result.qty}</strong>
+                </p>
+              </div>
+            </section>
+          </div>
+        )}
+      </article>
     </section>
   );
 }
@@ -1253,10 +1462,11 @@ function MoneyPlanItem({ label, value, badge = "", note = "" }) {
   );
 }
 
-function NumberInput({ label, value, onChange }) {
+function NumberInput({ label, value, onChange, helper = "" }) {
   return (
     <label className="number-field">
       <span>{label}</span>
+      {helper && <small>{helper}</small>}
       <input
         type="number"
         inputMode="decimal"

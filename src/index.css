@@ -302,6 +302,17 @@ button:not(:disabled) {
   box-shadow: 0 12px 26px rgba(215, 46, 67, 0.25);
 }
 
+.r1-card {
+  border-color: rgba(91, 193, 255, 0.36);
+}
+
+.r1-card::before {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.44), transparent 36%),
+    linear-gradient(135deg, #6ee7f9, #3b82f6);
+  box-shadow: 0 12px 26px rgba(59, 130, 246, 0.25);
+}
+
 .is-locked {
   border-color: rgba(255, 90, 102, 0.42);
   background:
@@ -413,6 +424,14 @@ button:not(:disabled) {
   border-color: rgba(255, 90, 102, 0.34);
   background:
     linear-gradient(145deg, rgba(255, 90, 102, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 70%),
+    var(--panel);
+}
+
+.r1-calculator-card {
+  border-color: rgba(91, 193, 255, 0.34);
+  background:
+    linear-gradient(145deg, rgba(91, 193, 255, 0.12), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 70%),
     var(--panel);
 }
@@ -618,6 +637,8 @@ button:not(:disabled) {
 .calculator-card > .input-grid,
 .calculator-card > .money-plan-card,
 .calculator-card > .output-grid,
+.calculator-card > .form-error,
+.calculator-card > .ato-output-grid,
 .calculator-card > .app-button {
   position: relative;
   z-index: 1;
@@ -729,6 +750,13 @@ button:not(:disabled) {
   line-height: 1.18;
 }
 
+.number-field small {
+  color: var(--soft);
+  font-size: 0.76rem;
+  font-weight: 760;
+  line-height: 1.28;
+}
+
 .number-field input {
   width: 100%;
   min-height: 52px;
@@ -750,6 +778,92 @@ button:not(:disabled) {
   border-color: rgba(255, 197, 51, 0.78);
   background: rgba(255, 255, 255, 0.095);
   box-shadow: 0 0 0 4px rgba(255, 197, 51, 0.12);
+}
+
+.form-error {
+  border: 1px solid rgba(255, 90, 102, 0.42);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 90, 102, 0.14), transparent 78%),
+    rgba(48, 18, 29, 0.82);
+  color: #ffe0e3;
+  padding: 12px 13px;
+  font-size: 0.9rem;
+  font-weight: 860;
+  line-height: 1.32;
+}
+
+.ato-output-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.ato-block {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(255, 197, 51, 0.2);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(255, 197, 51, 0.1), transparent 80%),
+    var(--panel-strong);
+  padding: 15px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.target-ato-block {
+  border-color: rgba(75, 217, 149, 0.28);
+  background:
+    linear-gradient(135deg, rgba(75, 217, 149, 0.11), transparent 78%),
+    var(--panel-strong);
+}
+
+.ato-block h2 {
+  margin: 0;
+  color: #fff6ce;
+  font-size: 1.1rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.ato-lines,
+.ato-sl-block {
+  display: grid;
+  gap: 10px;
+}
+
+.ato-lines p,
+.ato-sl-block p {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.ato-lines span,
+.ato-sl-block span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 840;
+  line-height: 1.22;
+}
+
+.ato-sl-block > span {
+  color: var(--accent);
+  font-weight: 950;
+}
+
+.ato-lines strong,
+.ato-sl-block strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1.12;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .money-plan-card {
@@ -1119,7 +1233,8 @@ button:not(:disabled) {
 .decor-step-buy .shape-ring,
 .decor-step-sell .shape-ring,
 .decor-calculator-buy .shape-ring,
-.decor-calculator-sell .shape-ring {
+.decor-calculator-sell .shape-ring,
+.decor-r1-calculator .shape-ring {
   top: -48px;
   right: -42px;
   opacity: 0.32;
@@ -1129,7 +1244,8 @@ button:not(:disabled) {
 .decor-step-buy .shape-quarter,
 .decor-step-sell .shape-quarter,
 .decor-calculator-buy .shape-quarter,
-.decor-calculator-sell .shape-quarter {
+.decor-calculator-sell .shape-quarter,
+.decor-r1-calculator .shape-quarter {
   left: -34px;
   bottom: 84px;
   opacity: 0.2;
@@ -1139,7 +1255,8 @@ button:not(:disabled) {
 .decor-step-buy .shape-triangle,
 .decor-step-sell .shape-triangle,
 .decor-calculator-buy .shape-triangle,
-.decor-calculator-sell .shape-triangle {
+.decor-calculator-sell .shape-triangle,
+.decor-r1-calculator .shape-triangle {
   right: 26px;
   bottom: 108px;
   transform: rotate(180deg) scale(0.58);
@@ -1150,7 +1267,8 @@ button:not(:disabled) {
 .decor-step-buy .shape-dots,
 .decor-step-sell .shape-dots,
 .decor-calculator-buy .shape-dots,
-.decor-calculator-sell .shape-dots {
+.decor-calculator-sell .shape-dots,
+.decor-r1-calculator .shape-dots {
   top: 56px;
   right: 16px;
   opacity: 0.15;
@@ -1160,7 +1278,8 @@ button:not(:disabled) {
 .decor-step-buy .shape-pill,
 .decor-step-sell .shape-pill,
 .decor-calculator-buy .shape-pill,
-.decor-calculator-sell .shape-pill {
+.decor-calculator-sell .shape-pill,
+.decor-r1-calculator .shape-pill {
   left: 22px;
   bottom: 24px;
   opacity: 0.12;
