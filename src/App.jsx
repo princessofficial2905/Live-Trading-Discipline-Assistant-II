@@ -14,6 +14,10 @@ const MAX_RISK_PER_1000_MARGIN = 50;
 const R1_CALCULATOR_LEVERAGE = 5;
 const R1_RISK_DIVISOR = 30;
 const R1_TARGET_PROFIT_DIVISOR = 10;
+const R_VALUE_LEVERAGE = 5;
+const R_VALUE_RISK_DIVISOR = 40;
+const R_VALUE_TARGET_RATE = 0.2;
+const R_VALUE_TRIGGER_OFFSET = 0.05;
 
 const SECTIONS = {
   HOME: "home",
@@ -21,6 +25,7 @@ const SECTIONS = {
   AFTER_SESSION: "afterSession",
   CALCULATOR: "calculator",
   R1_CALCULATOR: "r1Calculator",
+  R_VALUE_CALCULATOR: "rValueCalculator",
 };
 
 const TRADE_SIDES = {
@@ -57,6 +62,12 @@ const initialCalculatorInputs = {
 const initialR1CalculatorInputs = {
   margin: "",
   entryPrice: "",
+};
+
+const initialRValueInputs = {
+  margin: "",
+  entryPrice: "",
+  listPrice: "",
 };
 
 // Add ordered step images here later. Values can be public paths such as
@@ -336,6 +347,17 @@ function formatR1Currency(value) {
   return value < 0 ? `-\u20b9${amount}` : `\u20b9${amount}`;
 }
 
+function formatPrice(value) {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+
+  return value.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 function roundToTwo(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -412,6 +434,62 @@ function getR1CalculatorResult(inputs, tradeMode) {
       targetPrice,
       targetMovePerShare,
       tradeMode,
+      triggerPrice,
+    },
+  };
+}
+
+function getRValueResult(margin, price, includeTarget = false) {
+  if (
+    !Number.isFinite(margin) ||
+    !Number.isFinite(price) ||
+    margin <= 0 ||
+    price <= 0
+  ) {
+    return {
+      error: "Please enter valid positive numbers.",
+      result: null,
+    };
+  }
+
+  const effectiveCapital = margin * R_VALUE_LEVERAGE;
+  const qty = Math.floor(effectiveCapital / price);
+
+  if (qty <= 0) {
+    return {
+      error: "",
+      result: {
+        entryPrice: price,
+        effectiveCapital,
+        insufficientMargin: true,
+        qty,
+      },
+    };
+  }
+
+  const riskAmount = margin / R_VALUE_RISK_DIVISOR;
+  const riskPerQty = riskAmount / qty;
+  const slPrice = roundToTwo(price - riskPerQty);
+  const triggerPrice = roundToTwo(slPrice + R_VALUE_TRIGGER_OFFSET);
+  const targetAmount = margin * R_VALUE_TARGET_RATE;
+  const targetPerQty = targetAmount / qty;
+  const targetPrice = includeTarget
+    ? roundToTwo(price + targetPerQty)
+    : Number.NaN;
+
+  return {
+    error: "",
+    result: {
+      entryPrice: price,
+      effectiveCapital,
+      insufficientMargin: false,
+      qty,
+      riskAmount,
+      riskPerQty,
+      slPrice,
+      targetAmount,
+      targetPerQty,
+      targetPrice,
       triggerPrice,
     },
   };
@@ -568,6 +646,11 @@ function App() {
   function startR1Calculator() {
     setHomeNotice("");
     setMainSection(SECTIONS.R1_CALCULATOR);
+  }
+
+  function startRValueCalculator() {
+    setHomeNotice("");
+    setMainSection(SECTIONS.R_VALUE_CALCULATOR);
   }
 
   function getCalculatorLockMessageFor(side) {
@@ -887,6 +970,7 @@ function App() {
             onBuyCalculator={() => openCalculator(TRADE_SIDES.BUY)}
             onLive={startLiveFlow}
             onR1Calculator={startR1Calculator}
+            onRValueCalculator={startRValueCalculator}
             onSellCalculator={() => openCalculator(TRADE_SIDES.SELL)}
             sellCalculatorLocked={Boolean(sellCalculatorLockMessage)}
             tradingSessionOpen={tradingSessionOpen}
@@ -932,6 +1016,10 @@ function App() {
         {mainSection === SECTIONS.R1_CALCULATOR && (
           <R1CalculatorPage onHome={goHome} />
         )}
+
+        {mainSection === SECTIONS.R_VALUE_CALCULATOR && (
+          <RValueCalculatorPage onHome={goHome} />
+        )}
       </div>
     </main>
   );
@@ -963,6 +1051,7 @@ function HomePage({
   onBuyCalculator,
   onLive,
   onR1Calculator,
+  onRValueCalculator,
   onSellCalculator,
   sellCalculatorLocked,
   tradingSessionOpen,
@@ -1053,6 +1142,14 @@ function HomePage({
           marker="05"
           onClick={onR1Calculator}
           title="R1 Calculator"
+        />
+
+        <HomeSectionButton
+          className="r-value-card"
+          description="Calculate long-entry Qty, SL, trigger, and target from margin."
+          marker="06"
+          onClick={onRValueCalculator}
+          title="R Value Calculator"
         />
       </div>
     </section>
@@ -1314,6 +1411,304 @@ function R1CalculatorPage({ onHome }) {
         )}
       </article>
     </section>
+  );
+}
+
+function RValueCalculatorPage({ onHome }) {
+  const [step, setStep] = useState("margin");
+  const [inputs, setInputs] = useState(() => ({ ...initialRValueInputs }));
+  const [margin, setMargin] = useState(Number.NaN);
+  const [prices, setPrices] = useState([]);
+  const [error, setError] = useState("");
+
+  const realTimeEntryPrice = parseNumber(inputs.entryPrice);
+  const realTimeState =
+    inputs.entryPrice.trim() === ""
+      ? { error: "", result: null }
+      : getRValueResult(margin, realTimeEntryPrice, true);
+
+  function updateInput(field, value) {
+    setInputs((currentInputs) => ({
+      ...currentInputs,
+      [field]: value,
+    }));
+    setError("");
+  }
+
+  function submitMargin() {
+    const nextMargin = parseNumber(inputs.margin);
+
+    if (!Number.isFinite(nextMargin) || nextMargin <= 0) {
+      setError("Please enter a valid margin.");
+      return;
+    }
+
+    setMargin(nextMargin);
+    setStep("mode");
+    setError("");
+  }
+
+  function chooseMode(nextStep) {
+    setStep(nextStep);
+    setError("");
+  }
+
+  function addListPrice() {
+    const nextPrice = parseNumber(inputs.listPrice);
+
+    if (!Number.isFinite(nextPrice) || nextPrice <= 0) {
+      setError("Please enter a valid R value / price.");
+      return;
+    }
+
+    setPrices((currentPrices) => [...currentPrices, nextPrice]);
+    updateInput("listPrice", "");
+  }
+
+  function finishList() {
+    if (prices.length === 0) {
+      setError("Please add at least one R value / price.");
+      return;
+    }
+
+    setStep("listResults");
+    setError("");
+  }
+
+  function backToMode() {
+    setStep("mode");
+    setError("");
+  }
+
+  function renderMarginStep() {
+    return (
+      <RValueCard>
+        <div className="calculator-intro">
+          <ScreenHeader label="R VALUE CALCULATOR" progress="5x intraday" />
+          <h1>Enter Margin</h1>
+          <p>Margin is before leverage. Quantity uses margin x 5.</p>
+        </div>
+
+        <NumberInput
+          helper="Enter margin before applying intraday 5x leverage"
+          label="Margin"
+          value={inputs.margin}
+          onChange={(value) => updateInput("margin", value)}
+        />
+
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <AppButton label="Next" onClick={submitMargin} variant="accent" />
+      </RValueCard>
+    );
+  }
+
+  function renderModeStep() {
+    return (
+      <RValueCard>
+        <div className="calculator-intro">
+          <ScreenHeader label="R VALUE CALCULATOR" progress="Mode" />
+          <h1>Choose Mode</h1>
+          <p>Use Real-Time for one entry or List for multiple R values.</p>
+        </div>
+
+        <div className="r-value-mode-grid">
+          <AppButton
+            label="Real-Time"
+            onClick={() => chooseMode("realTime")}
+            variant="success"
+          />
+          <AppButton label="List" onClick={() => chooseMode("list")} />
+        </div>
+      </RValueCard>
+    );
+  }
+
+  function renderRealTimeStep() {
+    return (
+      <RValueCard>
+        <div className="calculator-intro">
+          <ScreenHeader label="R VALUE CALCULATOR" progress="Real-Time" />
+          <h1>Real-Time</h1>
+          <p>Enter one long entry price to calculate Qty, SL, and target.</p>
+        </div>
+
+        <NumberInput
+          label="Entry Price"
+          value={inputs.entryPrice}
+          onChange={(value) => updateInput("entryPrice", value)}
+        />
+
+        {(error || realTimeState.error) && (
+          <div className="form-error" role="alert">
+            {error || realTimeState.error}
+          </div>
+        )}
+
+        {realTimeState.result?.insufficientMargin && (
+          <div className="form-error" role="alert">
+            Insufficient margin
+          </div>
+        )}
+
+        {realTimeState.result && !realTimeState.result.insufficientMargin && (
+          <div className="r-value-result-grid" aria-live="polite">
+            <OutputCard
+              label="Entry Price"
+              value={formatPrice(realTimeState.result.entryPrice)}
+            />
+            <OutputCard label="Qty" value={String(realTimeState.result.qty)} />
+            <OutputCard
+              highlight
+              label="SL Price"
+              tone="buy"
+              value={formatPrice(realTimeState.result.slPrice)}
+            />
+            <OutputCard
+              highlight
+              label="Target Price"
+              tone="buy"
+              value={formatPrice(realTimeState.result.targetPrice)}
+            />
+          </div>
+        )}
+
+        <AppButton label="Back" onClick={backToMode} variant="nav" />
+      </RValueCard>
+    );
+  }
+
+  function renderListStep() {
+    return (
+      <RValueCard>
+        <div className="calculator-intro">
+          <ScreenHeader label="R VALUE CALCULATOR" progress="List" />
+          <h1>List</h1>
+          <p>Add one R value / price at a time, then tap Done.</p>
+        </div>
+
+        <div className="r-value-add-row">
+          <NumberInput
+            label="R value / Price"
+            value={inputs.listPrice}
+            onChange={(value) => updateInput("listPrice", value)}
+          />
+          <AppButton label="Add" onClick={addListPrice} variant="secondary" />
+        </div>
+
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        {prices.length > 0 && (
+          <div className="r-value-price-list" aria-live="polite">
+            {prices.map((price, index) => (
+              <span key={`${price}-${index}`}>{formatPrice(price)}</span>
+            ))}
+          </div>
+        )}
+
+        <div className="r-value-mode-grid">
+          <AppButton label="Back" onClick={backToMode} variant="nav" />
+          <AppButton label="Done" onClick={finishList} variant="accent" />
+        </div>
+      </RValueCard>
+    );
+  }
+
+  function renderListResultsStep() {
+    return (
+      <RValueCard>
+        <div className="calculator-intro">
+          <ScreenHeader label="R VALUE CALCULATOR" progress="List Result" />
+          <h1>List Results</h1>
+          <p>Long-entry Qty, SL Price, and Trigger Price for each price.</p>
+        </div>
+
+        <div className="r-value-table-wrap">
+          <table className="r-value-table">
+            <thead>
+              <tr>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>SL Price</th>
+                <th>Trigger Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {prices.map((price, index) => {
+                const rowState = getRValueResult(margin, price);
+                const row = rowState.result;
+
+                return (
+                  <tr key={`${price}-${index}`}>
+                    <td>{formatPrice(price)}</td>
+                    <td>
+                      {row?.insufficientMargin ? "Insufficient margin" : row?.qty}
+                    </td>
+                    <td>
+                      {row?.insufficientMargin
+                        ? "--"
+                        : formatPrice(row?.slPrice)}
+                    </td>
+                    <td>
+                      {row?.insufficientMargin
+                        ? "--"
+                        : formatPrice(row?.triggerPrice)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <AppButton label="Back" onClick={backToMode} variant="nav" />
+      </RValueCard>
+    );
+  }
+
+  function getBackAction() {
+    if (step === "margin") {
+      return onHome;
+    }
+
+    if (step === "mode") {
+      return () => setStep("margin");
+    }
+
+    return backToMode;
+  }
+
+  return (
+    <section className="flow-shell">
+      <header className="flow-nav" aria-label="R Value Calculator navigation">
+        <AppButton label="Back" onClick={getBackAction()} variant="nav" />
+        <span>R Value Calculator</span>
+        <AppButton label="Home" onClick={onHome} variant="nav" />
+      </header>
+
+      {step === "margin" && renderMarginStep()}
+      {step === "mode" && renderModeStep()}
+      {step === "realTime" && renderRealTimeStep()}
+      {step === "list" && renderListStep()}
+      {step === "listResults" && renderListResultsStep()}
+    </section>
+  );
+}
+
+function RValueCard({ children }) {
+  return (
+    <article className="calculator-card r-value-calculator-card">
+      <DecorativeShapes variant="r-value-calculator" />
+      {children}
+    </article>
   );
 }
 

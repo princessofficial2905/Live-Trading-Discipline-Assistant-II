@@ -313,6 +313,17 @@ button:not(:disabled) {
   box-shadow: 0 12px 26px rgba(59, 130, 246, 0.25);
 }
 
+.r-value-card {
+  border-color: rgba(255, 197, 51, 0.36);
+}
+
+.r-value-card::before {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.44), transparent 36%),
+    linear-gradient(135deg, #ffe278, #ec4899);
+  box-shadow: 0 12px 26px rgba(236, 72, 153, 0.22);
+}
+
 .is-locked {
   border-color: rgba(255, 90, 102, 0.42);
   background:
@@ -432,6 +443,14 @@ button:not(:disabled) {
   border-color: rgba(91, 193, 255, 0.34);
   background:
     linear-gradient(145deg, rgba(91, 193, 255, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 70%),
+    var(--panel);
+}
+
+.r-value-calculator-card {
+  border-color: rgba(255, 197, 51, 0.34);
+  background:
+    linear-gradient(145deg, rgba(236, 72, 153, 0.12), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 70%),
     var(--panel);
 }
@@ -640,6 +659,11 @@ button:not(:disabled) {
 .calculator-card > .form-error,
 .calculator-card > .ato-output-grid,
 .calculator-card > .r1-mode-toggle,
+.calculator-card > .r-value-add-row,
+.calculator-card > .r-value-mode-grid,
+.calculator-card > .r-value-price-list,
+.calculator-card > .r-value-result-grid,
+.calculator-card > .r-value-table-wrap,
 .calculator-card > .app-button {
   position: relative;
   z-index: 1;
@@ -836,6 +860,88 @@ button:not(:disabled) {
   font-size: 0.9rem;
   font-weight: 860;
   line-height: 1.32;
+}
+
+.r-value-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.r-value-add-row {
+  display: grid;
+  gap: 10px;
+}
+
+.r-value-price-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 11px;
+}
+
+.r-value-price-list span {
+  border: 1px solid rgba(255, 197, 51, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 197, 51, 0.1);
+  color: #fff6ce;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.r-value-result-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.r-value-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 197, 51, 0.2);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(255, 197, 51, 0.08), transparent 78%),
+    var(--panel-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.r-value-table {
+  width: 100%;
+  min-width: 430px;
+  border-collapse: collapse;
+}
+
+.r-value-table th,
+.r-value-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 12px 10px;
+  color: var(--soft);
+  font-size: 0.82rem;
+  font-weight: 840;
+  line-height: 1.25;
+  text-align: left;
+  vertical-align: top;
+}
+
+.r-value-table th {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.r-value-table td {
+  color: var(--text);
+}
+
+.r-value-table tr:last-child td {
+  border-bottom: 0;
 }
 
 .ato-output-grid {
@@ -1287,7 +1393,8 @@ button:not(:disabled) {
 .decor-step-sell .shape-ring,
 .decor-calculator-buy .shape-ring,
 .decor-calculator-sell .shape-ring,
-.decor-r1-calculator .shape-ring {
+.decor-r1-calculator .shape-ring,
+.decor-r-value-calculator .shape-ring {
   top: -48px;
   right: -42px;
   opacity: 0.32;
@@ -1298,7 +1405,8 @@ button:not(:disabled) {
 .decor-step-sell .shape-quarter,
 .decor-calculator-buy .shape-quarter,
 .decor-calculator-sell .shape-quarter,
-.decor-r1-calculator .shape-quarter {
+.decor-r1-calculator .shape-quarter,
+.decor-r-value-calculator .shape-quarter {
   left: -34px;
   bottom: 84px;
   opacity: 0.2;
@@ -1309,7 +1417,8 @@ button:not(:disabled) {
 .decor-step-sell .shape-triangle,
 .decor-calculator-buy .shape-triangle,
 .decor-calculator-sell .shape-triangle,
-.decor-r1-calculator .shape-triangle {
+.decor-r1-calculator .shape-triangle,
+.decor-r-value-calculator .shape-triangle {
   right: 26px;
   bottom: 108px;
   transform: rotate(180deg) scale(0.58);
@@ -1321,7 +1430,8 @@ button:not(:disabled) {
 .decor-step-sell .shape-dots,
 .decor-calculator-buy .shape-dots,
 .decor-calculator-sell .shape-dots,
-.decor-r1-calculator .shape-dots {
+.decor-r1-calculator .shape-dots,
+.decor-r-value-calculator .shape-dots {
   top: 56px;
   right: 16px;
   opacity: 0.15;
@@ -1332,7 +1442,8 @@ button:not(:disabled) {
 .decor-step-sell .shape-pill,
 .decor-calculator-buy .shape-pill,
 .decor-calculator-sell .shape-pill,
-.decor-r1-calculator .shape-pill {
+.decor-r1-calculator .shape-pill,
+.decor-r-value-calculator .shape-pill {
   left: 22px;
   bottom: 24px;
   opacity: 0.12;
@@ -1435,10 +1546,23 @@ button:not(:disabled) {
   .money-plan-grid {
     grid-template-columns: 1fr;
   }
+
+  .r-value-mode-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (min-width: 430px) {
   .input-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .r-value-add-row {
+    grid-template-columns: minmax(0, 1fr) 112px;
+    align-items: end;
+  }
+
+  .r-value-result-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
